@@ -1,0 +1,175 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .login-container {
+            background-color: #ffffff;
+            padding: 2rem 3rem;
+            border-radius: 14px;
+            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .login-container h2 {
+            margin-bottom: 1.25rem;
+            color: #1f2933;
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #52606d;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd2d9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #52606d;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background-color: #6366f1;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .login-btn:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .status {
+            min-height: 1.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+            color: #dc2626;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>Sign in</h2>
+        <div id="status" class="status" role="status"></div>
+        <form id="login-form" method="post" action="/auth/login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            <div class="form-options">
+                <label>
+                    <input type="checkbox" name="remember"> Remember me
+                </label>
+            </div>
+            <input type="hidden" name="next" id="next-input" value="/dashboard">
+            <button type="submit" class="login-btn">Login</button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('login-form');
+        const statusBox = document.getElementById('status');
+        const username = document.getElementById('username');
+        const password = document.getElementById('password');
+        const nextInput = document.getElementById('next-input');
+
+        const params = new URLSearchParams(window.location.search);
+        const nextParam = params.get('next');
+        if (nextParam && nextParam.startsWith('/')) {
+            nextInput.value = nextParam;
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            statusBox.textContent = '';
+
+            const formData = new URLSearchParams();
+            formData.set('username', username.value.trim());
+            formData.set('password', password.value);
+            formData.set('next', nextInput.value);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: formData.toString(),
+                });
+
+                const data = await response.json().catch(() => null);
+                if (!response.ok || !data?.ok) {
+                    statusBox.textContent = data?.error === 'INVALID_CREDENTIALS'
+                        ? 'Incorrect username or password.'
+                        : 'Unable to sign in. Please try again';
+                    return;
+                }
+
+                window.location.href = data.redirect || '/dashboard';
+            } catch (error) {
+                statusBox.textContent = 'Network error. Please try again later.';
+            }
+        });
+    </script>
+</body>
+</html>
+

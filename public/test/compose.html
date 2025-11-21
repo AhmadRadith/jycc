@@ -1,0 +1,491 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>EasyMDE + Digital Signature Demo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    :root {
+      color-scheme: light;
+    }
+    body {
+      font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 24px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    #wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, 0.1);
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+    .bar {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    input[type='file'] {
+      padding: 6px;
+      border: 1px dashed #cbd5f5;
+      border-radius: 12px;
+      background: #eef2ff;
+    }
+    button {
+      padding: 8px 14px;
+      border: 1px solid #cbd5f5;
+      border-radius: 12px;
+      background: #fff;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+    }
+    /* --- Signature Modal --- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 9999;
+      padding: 16px;
+    }
+    .modal.open {
+      display: grid;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 18px;
+      width: min(720px, 92vw);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .modal-header,
+    .modal-footer {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-footer {
+      border-top: 1px solid #e2e8f0;
+      border-bottom: none;
+    }
+    .modal-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1e293b;
+    }
+    .canvas-wrap {
+      padding: 16px;
+      background: #f1f5f9;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    #sig-canvas {
+      display: block;
+      width: 100%;
+      height: 320px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid #cbd5f5;
+      touch-action: none;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .controls > * {
+      margin: 4px 0;
+    }
+    .spacer {
+      flex: 1;
+    }
+    .btn {
+      padding: 8px 12px;
+      border: 1px solid #cbd5f5;
+      border-radius: 999px;
+      background: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #1e293b;
+      transition: background 0.2s ease;
+    }
+    .btn.primary {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #f8fafc;
+    }
+    .btn.primary:hover {
+      background: #1d4ed8;
+    }
+    .btn.danger {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #f8fafc;
+    }
+    .btn.danger:hover {
+      background: #dc2626;
+    }
+    .btn.ghost {
+      background: #f8fafc;
+      border-color: #cbd5f5;
+    }
+    .btn.ghost:hover {
+      background: #e2e8f0;
+    }
+    label.inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <h1>Compose Ticket</h1>
+    <textarea id="md"></textarea>
+    <div class="bar">
+      <input id="files" type="file" accept="image/*" multiple />
+      <button id="submit" type="button">Submit</button>
+    </div>
+  </div>
+
+  <!-- Signature Modal -->
+  <div id="sig-modal" class="modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="sig-title">
+      <div class="modal-header">
+        <div class="modal-title" id="sig-title">Add Signature</div>
+        <button class="btn ghost" id="sig-close" title="Close">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="sig-canvas"></canvas>
+      </div>
+      <div class="modal-footer">
+        <div class="controls">
+          <button class="btn danger" id="sig-clear" title="Clear">
+            <i class="fa fa-eraser"></i>
+            Clear
+          </button>
+          <button class="btn ghost" id="sig-undo" title="Undo (Ctrl+Z)">
+            <i class="fa fa-rotate-left"></i>
+            Undo
+          </button>
+          <button class="btn ghost" id="sig-redo" title="Redo (Ctrl+Y)">
+            <i class="fa fa-rotate-right"></i>
+            Redo
+          </button>
+          <span class="spacer"></span>
+          <label class="inline">
+            Color
+            <input id="sig-color" type="color" value="#111111" />
+          </label>
+          <label class="inline">
+            Width
+            <input id="sig-width" type="range" min="1" max="12" value="3" />
+          </label>
+          <button class="btn" id="sig-bg">Toggle Transparent BG</button>
+          <button class="btn primary" id="sig-save">
+            <i class="fa fa-check"></i>
+            Insert
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- libs -->
+  <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.10/dist/signature_pad.umd.min.js"></script>
+
+  <script>
+    // === EasyMDE setup with custom toolbar button ============================
+    const easyMDE = new EasyMDE({
+      element: document.getElementById('md'),
+      autofocus: true,
+      spellChecker: false,
+      placeholder: 'Describe the issue. Drag/paste images. Use **Markdown**.',
+      autosave: { enabled: false },
+      previewClass: 'editor-preview',
+      toolbar: [
+        'bold',
+        'italic',
+        'link',
+        'unordered-list',
+        'ordered-list',
+        'quote',
+        'code',
+        '|',
+        {
+          name: 'signature',
+          action: () => openSignatureModal(),
+          className: 'fa-solid fa-pen-nib',
+          title: 'Insert digital signature',
+        },
+        '|',
+        'preview',
+        'guide',
+      ],
+    });
+
+    // helper to insert markdown at the cursor
+    function insertMarkdown(md) {
+      const cm = easyMDE.codemirror;
+      cm.replaceSelection(md);
+      cm.focus();
+    }
+
+    // === Demo upload function (replace with your real POST) ==================
+    async function uploadBlob(blob) {
+      // Example real upload:
+      // const form = new FormData(); form.append('file', blob, 'signature.png');
+      // const res = await fetch('/upload', { method:'POST', body: form });
+      // const { url } = await res.json(); return url;
+
+      // Demo: local object URL
+      return URL.createObjectURL(blob);
+    }
+
+    // also keep your original image paste/drag flow
+    const cm = easyMDE.codemirror;
+    cm.on('paste', async (_, e) => {
+      const files = Array.from(e.clipboardData?.files || []).filter((f) =>
+        f.type.startsWith('image/')
+      );
+      for (const f of files) {
+        const url = await uploadBlob(f);
+        insertMarkdown(`\n![screenshot](${url})\n`);
+      }
+    });
+    document.getElementById('files').addEventListener('change', async (e) => {
+      for (const f of e.target.files) {
+        if (!f.type.startsWith('image/')) continue;
+        const url = await uploadBlob(f);
+        insertMarkdown(`\n![screenshot](${url})\n`);
+      }
+    });
+
+    document.getElementById('submit').onclick = () => {
+      const markdown = easyMDE.value();
+      console.log('Submit payload:', { markdown });
+      alert(markdown);
+    };
+
+    // === Signature modal + SignaturePad wiring ===============================
+    const modal = document.getElementById('sig-modal');
+    const canvas = document.getElementById('sig-canvas');
+    const btnClose = document.getElementById('sig-close');
+    const btnClear = document.getElementById('sig-clear');
+    const btnUndo = document.getElementById('sig-undo');
+    const btnRedo = document.getElementById('sig-redo');
+    const btnSave = document.getElementById('sig-save');
+    const btnBg = document.getElementById('sig-bg');
+    const colorInput = document.getElementById('sig-color');
+    const widthInput = document.getElementById('sig-width');
+
+    let sigPad = null;
+    let strokes = [];
+    let redoStack = [];
+    let transparentBG = true;
+
+    const cloneState = (state) => {
+      if (typeof window.structuredClone === 'function') {
+        try {
+          return window.structuredClone(state || []);
+        } catch {
+          return JSON.parse(JSON.stringify(state || []));
+        }
+      }
+      return JSON.parse(JSON.stringify(state || []));
+    };
+
+    function openSignatureModal() {
+      modal.classList.add('open');
+      // Wait for CSS layout, then size the canvas to devicePixelRatio
+      requestAnimationFrame(() => {
+        resizeCanvas();
+        if (!sigPad) initSignaturePad();
+        sigPad.clear();
+        strokes = [cloneState(sigPad.toData())];
+        redoStack = [];
+        updateSignatureControls();
+      });
+    }
+
+    function closeSignatureModal() {
+      modal.classList.remove('open');
+    }
+
+    function resizeCanvas() {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      // CSS size
+      const rect = canvas.getBoundingClientRect();
+      const snapshot = sigPad ? cloneState(sigPad.toData()) : [];
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+      // if background is not transparent, paint it
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      if (!transparentBG) {
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+        ctx.restore();
+      }
+      if (sigPad && snapshot.length) {
+        sigPad.clear();
+        sigPad.fromData(cloneState(snapshot));
+      }
+    }
+
+    function initSignaturePad() {
+      sigPad = new SignaturePad(canvas, {
+        penColor: colorInput.value,
+        minWidth: 0.5,
+        maxWidth: Number(widthInput.value),
+        backgroundColor: transparentBG ? 'rgba(0,0,0,0)' : '#ffffff',
+      });
+
+      // Track strokes for undo/redo (SignaturePad v5 exposes toData/fromData)
+      const capture = () => {
+        strokes.push(cloneState(sigPad.toData()));
+        // clear redo when new stroke is made
+        redoStack = [];
+        updateSignatureControls();
+      };
+      sigPad.addEventListener('beginStroke', () => {
+        // do nothing special on begin, but keep for parity
+      });
+      sigPad.addEventListener('endStroke', capture);
+
+      // controls
+      colorInput.addEventListener('input', () => {
+        sigPad.penColor = colorInput.value;
+      });
+      widthInput.addEventListener('input', () => {
+        sigPad.minWidth = 0.5;
+        sigPad.maxWidth = Number(widthInput.value);
+      });
+
+      // window resize should keep drawing crisp
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+      });
+
+      strokes = [cloneState(sigPad.toData())];
+      redoStack = [];
+      updateSignatureControls();
+    }
+
+    function updateSignatureControls() {
+      const hasStroke = strokes.length > 1;
+      btnUndo.disabled = !hasStroke;
+      btnRedo.disabled = !redoStack.length;
+      btnClear.disabled = sigPad?.isEmpty();
+      btnSave.disabled = sigPad?.isEmpty();
+      btnBg.textContent = transparentBG ? 'Toggle Transparent BG' : 'Use Transparent BG';
+    }
+
+    btnClear.addEventListener('click', () => {
+      sigPad.clear();
+      strokes = [cloneState(sigPad.toData())];
+      redoStack = [];
+      updateSignatureControls();
+    });
+
+    btnUndo.addEventListener('click', () => {
+      if (strokes.length <= 1) return;
+      // pop last snapshot, push it to redo, then draw previous
+      const last = strokes.pop();
+      redoStack.push(cloneState(last));
+      const prev = strokes[strokes.length - 1] || [];
+      sigPad.clear();
+      if (prev.length) sigPad.fromData(cloneState(prev));
+      updateSignatureControls();
+    });
+
+    btnRedo.addEventListener('click', () => {
+      if (!redoStack.length) return;
+      const next = redoStack.pop();
+      strokes.push(cloneState(next));
+      sigPad.clear();
+      sigPad.fromData(cloneState(next));
+      updateSignatureControls();
+    });
+
+    btnBg.addEventListener('click', () => {
+      transparentBG = !transparentBG;
+      const data = cloneState(sigPad.toData());
+      resizeCanvas();
+      sigPad.backgroundColor = transparentBG ? 'rgba(0,0,0,0)' : '#ffffff';
+      sigPad.clear();
+      if (data.length) sigPad.fromData(cloneState(data));
+      strokes = [cloneState(sigPad.toData())];
+      redoStack = [];
+      updateSignatureControls();
+    });
+
+    btnSave.addEventListener('click', async () => {
+      if (sigPad.isEmpty()) {
+        alert('Please provide a signature first.');
+        return;
+      }
+      const dataURL = sigPad.toDataURL('image/png');
+      const blob = await (await fetch(dataURL)).blob();
+      const url = await uploadBlob(blob); // replace with real upload endpoint
+      insertMarkdown(`\n![signature](${url})\n`);
+      closeSignatureModal();
+    });
+
+    btnClose.addEventListener('click', closeSignatureModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeSignatureModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) closeSignatureModal();
+      const ctrlOrCmd = e.ctrlKey || e.metaKey;
+      if (modal.classList.contains('open') && (e.key === 'z' || e.key === 'Z') && ctrlOrCmd) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          btnRedo.click();
+        } else {
+          btnUndo.click();
+        }
+      }
+      if (modal.classList.contains('open') && (e.key === 'y' || e.key === 'Y') && ctrlOrCmd) {
+        e.preventDefault();
+        btnRedo.click();
+      }
+    });
+  </script>
+</body>
+</html>
+

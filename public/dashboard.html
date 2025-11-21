@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-white text-slate-900 dark:bg-gray-900 dark:text-white">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Dashboard</title>
+    <script>
+      (() => {
+        const storageKey = 'mbg-theme';
+        const stored = localStorage.getItem(storageKey);
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (stored === 'dark' || (!stored && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            screens: { '3xl': '1920px' } // make space on very large desktops
+          }
+        }
+      };
+    </script>
+    <style>
+      :root { color-scheme: light; }
+      :root.dark { color-scheme: dark; }
+      .surface-panel {
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        border: 1px solid rgba(148, 163, 184, 0.35) !important;
+        backdrop-filter: blur(14px);
+      }
+      .dark .surface-panel {
+        background-color: rgba(15, 23, 42, 0.72) !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+      }
+      .surface-overlay {
+        background-color: rgba(255, 255, 255, 0.94) !important;
+        border: 1px solid rgba(148, 163, 184, 0.3) !important;
+        backdrop-filter: blur(16px);
+      }
+      .dark .surface-overlay {
+        background-color: rgba(15, 23, 42, 0.94) !important;
+        border-color: rgba(148, 163, 184, 0.2) !important;
+      }
+      .surface-muted {
+        background-color: rgba(241, 245, 249, 0.9) !important;
+        border: 1px dashed rgba(148, 163, 184, 0.4) !important;
+      }
+      .dark .surface-muted {
+        background-color: rgba(15, 23, 42, 0.5) !important;
+        border-color: rgba(148, 163, 184, 0.3) !important;
+      }
+      .surface-strong {
+        background-color: rgba(248, 250, 252, 0.95) !important;
+      }
+      .dark .surface-strong {
+        background-color: rgba(15, 23, 42, 0.9) !important;
+      }
+    </style>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.zingchart.com/zingchart.min.js"></script>
+    <script>
+      zingchart.MODULESDIR = "https://cdn.zingchart.com/modules/";
+      ZC.LICENSE = ["569d52cefae586f634c54f86dc99e6a9", "ee6b7db5b51705a13dc2339db3edaf6d"];
+    </script>
+    <script src="/assets/js/dashboard.js"></script>
+  </head>
+  <body class="h-full bg-slate-100 transition-colors duration-200 dark:bg-gray-950 surface-strong">
+    <div id="dashboard-surface" class="min-h-full bg-gradient-to-b from-slate-100 via-white to-slate-100 pb-16 transition-colors duration-200 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900">
+      <nav class="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm transition-colors duration-200 dark:border-white/10 dark:bg-gray-900/70 dark:shadow-md">
+        <!-- was max-w-7xl; now full width -->
+        <div class="mx-auto w-full max-w-none px-4 sm:px-6 lg:px-8">
+          <div class="flex h-16 items-center justify-between">
+            <div class="flex items-center gap-6">
+              <div class="shrink-0">
+                <img src="/assets/images/logo.png" alt="MBG Logo" class="size-8" />
+              </div>
+              <div class="hidden md:block">
+                <div class="flex items-baseline gap-4">
+                  <a
+                    href="/"
+                    aria-current="page"
+                    class="rounded-md bg-slate-900/10 px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-900/15 hover:text-slate-900 dark:bg-gray-950/60 dark:text-white dark:hover:bg-white/10 dark:hover:text-white"
+                  >Dashboard</a>
+                  <a
+                    href="/lapor"
+                    class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white"
+                  >Laporan</a>
+                  <a
+                    href="/pengaturan"
+                    class="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white"
+                  >Settings</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="hidden items-center gap-4 md:flex">
+              <button
+                type="button"
+                data-theme-toggle
+                class="relative inline-flex items-center justify-center rounded-full border border-slate-200/70 bg-white px-2.5 py-2 text-base text-slate-700 transition hover:border-indigo-400 hover:text-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-indigo-400 dark:hover:text-indigo-200"
+                aria-label="Switch theme"
+                title="Switch theme"
+              >
+                <span class="text-lg leading-none dark:hidden">🌙</span>
+                <span class="hidden text-lg leading-none dark:inline">☀️</span>
+              </button>
+              <button
+                type="button"
+                class="relative rounded-full p-1 text-slate-500 transition hover:text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500 dark:text-gray-400 dark:hover:text-white"
+                aria-label="View notifications"
+              >
+                <span class="absolute -inset-1.5"></span>
+                <span class="sr-only">View notifications</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                  class="size-6"
+                >
+                  <path
+                    d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+              <div class="relative">
+                <button
+                  type="button"
+                  data-user-menu-button
+                  data-user-name=""
+                  data-user-role=""
+                  data-user-email=""
+                  data-user-login=""
+                  data-user-avatar=""
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  class="relative flex max-w-xs items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                >
+                  <span class="absolute -inset-1.5"></span>
+                  <span class="sr-only">Open user menu</span>
+                  <img
+                    id="userMenuAvatarDesktop"
+                    src="https://api.dicebear.com/7.x/initials/svg?seed=User"
+                    alt="User avatar"
+                    class="size-8 rounded-full outline -outline-offset-1 outline-slate-300/80 dark:outline-white/10"
+                  />
+                </button>
+
+                <div
+                  id="user-menu"
+                  class="absolute right-0 z-20 mt-2 w-48 origin-top-right rounded-lg border border-slate-200/60 bg-white py-1 shadow-lg ring-1 ring-slate-900/10 focus:outline-none dark:border-white/10 dark:bg-gray-900 dark:ring-white/10 hidden"
+                  role="menu"
+                  aria-orientation="vertical"
+                >
+                  <div class="px-4 py-3" role="none">
+                    <div id="userMenuName" class="text-sm font-medium text-slate-900 dark:text-white"></div>
+                    <div id="userMenuDivider" class="my-1 h-px bg-slate-200 dark:bg-white/10 hidden" aria-hidden="true"></div>
+                    <div id="userMenuLogin" class="text-xs text-slate-500 dark:text-gray-400"></div>
+                  </div>
+                  <div class="my-1 border-t border-slate-200/70 dark:border-white/10" role="none"></div>
+                  <a
+                    href="/pengaturan"
+                    class="block px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white"
+                    role="menuitem"
+                  >Settings</a>
+                  <a
+                    href="#"
+                    data-action="logout"
+                    class="block px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white"
+                    role="menuitem"
+                  >Sign out</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="-mr-2 flex items-center gap-2 md:hidden">
+              <button
+                type="button"
+                data-theme-toggle
+                class="relative inline-flex items-center justify-center rounded-full border border-slate-200/70 bg-white px-2.5 py-2 text-base text-slate-700 transition hover:border-indigo-400 hover:text-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-indigo-400 dark:hover:text-indigo-200"
+                aria-label="Switch theme"
+                title="Switch theme"
+              >
+                <span class="text-lg leading-none dark:hidden">🌙</span>
+                <span class="hidden text-lg leading-none dark:inline">☀️</span>
+              </button>
+              <button
+                type="button"
+                data-mobile-menu-button
+                aria-controls="mobile-menu"
+                aria-expanded="false"
+                class="relative inline-flex items-center justify-center rounded-md p-2 text-slate-500 transition hover:bg-slate-900/5 hover:text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <span class="absolute -inset-0.5"></span>
+                <span class="sr-only">Open main menu</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                  class="size-6"
+                >
+                  <path
+                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="mobile-menu"
+          class="surface-overlay md:hidden hidden absolute inset-x-0 top-full z-40 border-b border-slate-200/70 px-4 pb-4 pt-3 shadow-xl transition dark:border-white/10"
+        >
+          <div class="space-y-1 px-1 pb-3">
+            <a
+              href="/"
+              aria-current="page"
+              class="block rounded-md bg-slate-900/10 px-3 py-2 text-base font-semibold text-slate-900 transition dark:bg-gray-950/60 dark:text-white"
+            >Dashboard</a>
+            <a
+              href="/lapor"
+              class="block rounded-md px-3 py-2 text-base font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+            >Laporan</a>
+            <a
+              href="/pengaturan"
+              class="block rounded-md px-3 py-2 text-base font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+            >Settings</a>
+          </div>
+          <div class="border-t border-slate-200/70 py-3 dark:border-white/10">
+            <div class="flex items-center gap-3">
+              <img
+                id="userMenuAvatarMobile"
+                src="https://api.dicebear.com/7.x/initials/svg?seed=User"
+                alt="User avatar"
+                class="size-10 rounded-full outline -outline-offset-1 outline-slate-300/80 dark:outline-white/10"
+              />
+              <div class="min-w-0 flex-1">
+                <div id="mobileUserName" class="truncate text-base font-semibold text-slate-900 dark:text-white">Current User</div>
+                <div id="mobileUserDivider" class="my-1 h-px bg-slate-200 dark:bg-white/10 hidden" aria-hidden="true"></div>
+                <div id="mobileUserLogin" class="truncate text-xs font-medium text-slate-500 dark:text-gray-400"></div>
+              </div>
+              <button
+                type="button"
+                class="relative rounded-full p-1 text-slate-500 transition hover:text-slate-900 focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500 dark:text-gray-400 dark:hover:text-white"
+                aria-label="View notifications"
+              >
+                <span class="absolute -inset-1.5"></span>
+                <span class="sr-only">View notifications</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                  class="size-6"
+                >
+                  <path
+                    d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="mt-3 space-y-1">
+              <a
+                href="/pengaturan"
+                class="block rounded-md px-3 py-2 text-base font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              >Settings</a>
+              <a
+                href="#"
+                data-action="logout"
+                class="block rounded-md px-3 py-2 text-base font-medium text-slate-600 transition hover:bg-slate-900/5 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-white/10 dark:hover:text-white"
+              >Sign out</a>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <header class="relative border-b border-slate-200/60 bg-white/80 backdrop-blur transition-colors duration-200 dark:border-white/10 dark:bg-gray-900/60">
+        <!-- was max-w-7xl; now full width -->
+        <div class="mx-auto w-full max-w-none px-4 py-6 sm:px-6 lg:px-8">
+          <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Dashboard</h1>
+          <p class="mt-2 max-w-3xl text-sm text-slate-600 dark:text-gray-300">
+            Pantau ringkasan kinerja dan akses cepat ke laporan terbaru dalam satu tampilan.
+          </p>
+        </div>
+      </header>
+
+      <main>
+        <!-- was max-w-7xl; now full width + larger gutters & wider side rails on big screens -->
+        <div
+          class="mx-auto grid w-full max-w-none
+                 gap-6 xl:gap-8 2xl:gap-10
+                 px-4 py-8 sm:px-6 lg:px-8
+                 xl:grid-cols-[18rem_minmax(0,1fr)_22rem]
+                 2xl:grid-cols-[20rem_minmax(0,1fr)_24rem]
+                 3xl:grid-cols-[22rem_minmax(0,1fr)_26rem]"
+        >
+          <div class="flex flex-col gap-6" data-dashboard-column="left">
+            <section class="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm transition dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="activity">
+              <p class="text-xs uppercase tracking-[0.28em] text-indigo-400">Aktivitas Hari Ini</p>
+              <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">16 tiket baru</h2>
+              <ul class="mt-4 space-y-3 text-sm text-slate-600 dark:text-gray-300">
+                <li class="flex items-start justify-between gap-3">
+                  <span>Kategori Infrastruktur</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">6</span>
+                </li>
+                <li class="flex items-start justify-between gap-3">
+                  <span>Kategori Keamanan</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">5</span>
+                </li>
+                <li class="flex items-start justify-between gap-3">
+                  <span>Kategori Peralatan</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">5</span>
+                </li>
+              </ul>
+            </section>
+            <section class="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm transition dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="capacity">
+              <p class="text-xs uppercase tracking-[0.28em] text-indigo-400">Kapasitas tim</p>
+              <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">SLA tercapai 82%</h2>
+              <div class="mt-4 space-y-4 text-sm text-slate-600 dark:text-gray-300">
+                <div>
+                  <div class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">
+                    <span>Tim pusat</span>
+                    <span>89%</span>
+                  </div>
+                  <div class="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div class="h-full rounded-full bg-indigo-500" style="width: 89%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500 dark:text-gray-400">
+                    <span>Tim daerah</span>
+                    <span>78%</span>
+                  </div>
+                  <div class="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                    <div class="h-full rounded-full bg-emerald-500" style="width: 78%"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm transition dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="alerts">
+              <p class="text-xs uppercase tracking-[0.28em] text-rose-400">Notifikasi</p>
+              <h2 class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">3 tiket kritis</h2>
+              <ul class="mt-4 space-y-2 text-sm text-slate-600 dark:text-gray-300">
+                <li class="rounded-xl border border-rose-200/60 bg-rose-50/70 px-3 py-2 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200">
+                  Gedung A - Kebocoran utama
+                </li>
+                <li class="rounded-xl border border-rose-200/60 bg-rose-50/70 px-3 py-2 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200">
+                  Area parkir - Keamanan
+                </li>
+                <li class="rounded-xl border border-rose-200/60 bg-rose-50/70 px-3 py-2 text-rose-700 dark:border-rose-500/40 dark:bg-rose-500/10 dark:text-rose-200">
+                  Laboratorium - Gangguan listrik
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <div class="flex flex-col gap-6" data-dashboard-column="center">
+            <section class="rounded-3xl border border-slate-200/60 bg-white/90 p-6 shadow-xl transition duration-300 dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="chart">
+              <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p class="text-xs uppercase tracking-wide text-indigo-400">Volume tiket</p>
+                  <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Pergerakan mingguan</h2>
+                  <p class="text-sm text-slate-600 dark:text-gray-300">Pantau tren penyelesaian untuk 12 minggu terakhir.</p>
+                </div>
+              </div>
+              <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+                <div class="rounded-2xl border border-slate-200/60 bg-white/95 p-5 shadow-sm dark:border-white/10 dark:bg-gray-900/80 surface-overlay">
+                  <div id="dashboard-chart" class="h-72 w-full md:h-80"></div>
+                </div>
+                <div class="grid gap-4 text-xs md:text-sm">
+                  <div class="rounded-2xl border border-slate-200/60 bg-slate-100/90 p-4 shadow-sm dark:border-white/10 dark:bg-gray-900/60">
+                    <p class="text-indigo-500 dark:text-indigo-200">Diproses</p>
+                    <p class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">12.4k</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-wide text-indigo-300">+4.1% dibanding minggu lalu</p>
+                  </div>
+                  <div class="rounded-2xl border border-slate-200/60 bg-slate-100/90 p-4 shadow-sm dark:border-white/10 dark:bg-gray-900/60">
+                    <p class="text-indigo-500 dark:text-indigo-200">Selesai</p>
+                    <p class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">9.8k</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-wide text-indigo-300">+6.4% dibanding minggu lalu</p>
+                  </div>
+                  <div class="rounded-2xl border border-slate-200/60 bg-slate-100/90 p-4 shadow-sm dark:border-white/10 dark:bg-gray-900/60">
+                    <p class="text-indigo-500 dark:text-indigo-200">Menunggu</p>
+                    <p class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">4.7k</p>
+                    <p class="mt-1 text-[11px] uppercase tracking-wide text-indigo-300">-1.8% dibanding minggu lalu</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="rounded-3xl border border-slate-200/60 bg-white/90 p-6 shadow-xl transition duration-300 dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="updates">
+              <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Rencana tindakan</h2>
+                  <p class="text-sm text-slate-600 dark:text-gray-300">Koordinasi tindak lanjut lapangan pekan ini.</p>
+                </div>
+                <a
+                  href="/lapor"
+                  class="inline-flex items-center justify-center rounded-full border border-slate-200/70 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-400 hover:text-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-indigo-400 dark:hover:text-indigo-200"
+                >Buat catatan</a>
+              </div>
+              <ul class="mt-4 grid gap-3 text-sm text-slate-600 dark:text-gray-300 md:grid-cols-2">
+                <li class="rounded-2xl border border-slate-200/60 bg-slate-100/80 p-4 dark:border-white/10 dark:bg-gray-900/60">
+                  <p class="text-xs uppercase tracking-wide text-indigo-400">Senin</p>
+                  <p class="mt-1 font-semibold text-slate-900 dark:text-white">Inspeksi fasilitas lab</p>
+                  <p class="mt-1 text-xs text-slate-500 dark:text-gray-400">Tim pusat &amp; daerah</p>
+                </li>
+                <li class="rounded-2xl border border-slate-200/60 bg-slate-100/80 p-4 dark:border-white/10 dark:bg-gray-900/60">
+                  <p class="text-xs uppercase tracking-wide text-indigo-400">Selasa</p>
+                  <p class="mt-1 font-semibold text-slate-900 dark:text-white">Penggantian peralatan kelas</p>
+                  <p class="mt-1 text-xs text-slate-500 dark:text-gray-400">Vendor mitra</p>
+                </li>
+                <li class="rounded-2xl border border-slate-200/60 bg-slate-100/80 p-4 dark:border-white/10 dark:bg-gray-900/60">
+                  <p class="text-xs uppercase tracking-wide text-indigo-400">Rabu</p>
+                  <p class="mt-1 font-semibold text-slate-900 dark:text-white">Survey keamanan malam</p>
+                  <p class="mt-1 text-xs text-slate-500 dark:text-gray-400">Satgas keamanan</p>
+                </li>
+                <li class="rounded-2xl border border-slate-200/60 bg-slate-100/80 p-4 dark:border-white/10 dark:bg-gray-900/60">
+                  <p class="text-xs uppercase tracking-wide text-indigo-400">Kamis</p>
+                  <p class="mt-1 font-semibold text-slate-900 dark:text-white">Review SLA mingguan</p>
+                  <p class="mt-1 text-xs text-slate-500 dark:text-gray-400">Manajemen &amp; stakeholder</p>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <div class="flex flex-col gap-6" data-dashboard-column="right">
+            <section class="rounded-3xl border border-slate-200/60 bg-white/90 p-6 shadow-xl transition duration-300 dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="completion">
+              <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Rasio penyelesaian</h2>
+              <p class="mt-2 text-sm text-slate-600 dark:text-gray-300">Target SLA 90%</p>
+              <div class="mt-4 grid gap-4 text-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-600 dark:text-gray-300">Minggu ini</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">86%</span>
+                </div>
+                <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                  <div class="h-full rounded-full bg-indigo-500" style="width: 86%"></div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-600 dark:text-gray-300">Minggu lalu</span>
+                  <span class="font-semibold text-slate-900 dark:text-white">82%</span>
+                </div>
+                <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
+                  <div class="h-full rounded-full bg-emerald-500" style="width: 82%"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="rounded-3xl border border-slate-200/60 bg-white/90 p-6 shadow-xl transition duration-300 dark:border-white/10 dark:bg-gray-900/70 surface-panel" data-dashboard-card="ticket-feed">
+              <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Daftar tiket terbaru</h2>
+                  <p class="text-sm text-slate-600 dark:text-gray-300">Lima laporan terakhir berdasarkan hak akses akun Anda.</p>
+                </div>
+                <a
+                  href="/lapor"
+                  class="inline-flex items-center justify-center rounded-full border border-slate-200/70 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-400 hover:text-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400 dark:border-white/10 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-indigo-400 dark:hover:text-indigo-200"
+                >Lihat semua</a>
+              </div>
+              <div
+                data-dashboard-ticket-loading
+                class="mt-6 text-sm text-slate-500 dark:text-gray-400"
+              >Memuat tiket...</div>
+              <div
+                data-dashboard-ticket-empty
+                class="mt-6 hidden rounded-xl border border-dashed border-slate-300/60 bg-slate-100/80 p-4 text-sm text-slate-600 dark:border-white/20 dark:bg-gray-900/50 dark:text-gray-300"
+              >Belum ada tiket yang tercatat.</div>
+              <ul data-dashboard-ticket-list class="mt-6 space-y-4"></ul>
+            </section>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
