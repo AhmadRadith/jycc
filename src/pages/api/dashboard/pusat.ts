@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import dbConnect from "@/lib/mongo";
 import { Report } from "@/models/Report";
+import { User } from "@/models/User";
 
 import Statistic from "@/models/Statistic";
 
@@ -42,9 +43,45 @@ export default async function handler(
     location: r.district || r.schoolName || "Unknown",
   }));
 
+  const schools = await User.find({ role: "sekolah" });
+
+  const schoolData = await Promise.all(
+    schools.map(async (school) => {
+      const studentCount = await User.countDocuments({
+        role: "murid",
+        schoolId: school.schoolId,
+      });
+
+      const totalSchoolReports = await Report.countDocuments({
+        schoolId: school.schoolId,
+      });
+      const approvedSchoolReports = await Report.countDocuments({
+        schoolId: school.schoolId,
+        status: "approved",
+      });
+
+      const score =
+        totalSchoolReports > 0
+          ? Math.round((approvedSchoolReports / totalSchoolReports) * 100)
+          : 100;
+
+      return {
+        id: school._id,
+        name: school.fullName,
+        students: studentCount,
+        pic: school.username,
+        score: score,
+        email: school.email,
+        npsn: school.schoolId,
+        district: school.district || "Unknown",
+      };
+    })
+  );
+
   res.status(200).json({
     stats,
     recentReports,
     alerts,
+    schools: schoolData,
   });
 }

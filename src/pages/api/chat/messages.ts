@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import connectToMongo from "@/lib/mongo";
 import { ChatMessage } from "@/lib/models/ChatMessage";
 import { getSessionUserFromRequest } from "@/lib/session";
+import locale from "../../../locales/api.json";
 
 const FIXED_TICKET_ID = "tiket-0";
 
@@ -12,7 +13,7 @@ export default async function handler(
 ) {
   const user = getSessionUserFromRequest(req);
   if (!user) {
-    return res.status(401).json({ ok: false, error: "UNAUTHORIZED" });
+    return res.status(401).json({ ok: false, error: locale.UNAUTHORIZED });
   }
   try {
     await connectToMongo();
@@ -30,7 +31,7 @@ export default async function handler(
   }
 
   res.setHeader("Allow", "GET, POST");
-  return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
+  return res.status(405).json({ ok: false, error: locale.METHOD_NOT_ALLOWED });
 }
 
 async function handleGetMessages(req: NextApiRequest, res: NextApiResponse) {
@@ -45,7 +46,7 @@ async function handleGetMessages(req: NextApiRequest, res: NextApiResponse) {
     console.log(e);
     return res
       .status(500)
-      .json({ ok: false, error: "FAILED_TO_FETCH_MESSAGES" });
+      .json({ ok: false, error: locale.FAILED_TO_FETCH_MESSAGES });
   }
 }
 
@@ -61,15 +62,17 @@ async function handlePostMessage(
     (typeof text !== "string" || text.trim().length === 0) &&
     typeof imageData !== "string"
   ) {
-    return res.status(400).json({ ok: false, error: "EMPTY_MESSAGE" });
+    return res.status(400).json({ ok: false, error: locale.EMPTY_MESSAGE });
   }
 
   if (imageData && typeof imageData !== "string") {
-    return res.status(400).json({ ok: false, error: "INVALID_IMAGE_DATA" });
+    return res
+      .status(400)
+      .json({ ok: false, error: locale.INVALID_IMAGE_DATA });
   }
 
   if (imageData && imageData.length > 2_000_000) {
-    return res.status(413).json({ ok: false, error: "IMAGE_TOO_LARGE" });
+    return res.status(413).json({ ok: false, error: locale.IMAGE_TOO_LARGE });
   }
 
   try {
@@ -84,6 +87,8 @@ async function handlePostMessage(
 
     return res.status(201).json({ ok: true, message: doc });
   } catch {
-    return res.status(500).json({ ok: false, error: "FAILED_TO_SAVE_MESSAGE" });
+    return res
+      .status(500)
+      .json({ ok: false, error: locale.FAILED_TO_SAVE_MESSAGE });
   }
 }

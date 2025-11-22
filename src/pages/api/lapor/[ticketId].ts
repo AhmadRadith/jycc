@@ -56,6 +56,7 @@ export default async function handler(
 
       if (status) updateData.status = status;
       if (assignedMitra) updateData.assignedMitra = assignedMitra;
+      if (req.body.priority) updateData.priority = req.body.priority;
       if (req.body.studentReports)
         updateData.studentReports = req.body.studentReports;
 

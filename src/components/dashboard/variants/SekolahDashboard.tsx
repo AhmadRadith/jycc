@@ -43,17 +43,116 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 
-
 type ReportStatus = "approved" | "pending" | "rejected";
 
 interface Student {
-  id: number;
+  id: string;
   name: string;
   nisn: string;
   class: string;
-  status: "Hadir" | "Sakit" | "Izin" | "Alpha" | "Belum Absen";
-  gender: "L" | "P";
+  status: string;
+  gender: string;
 }
+
+const EditStudentModal = ({
+  student,
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  student: Student | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Student) => void;
+}) => {
+  const [formData, setFormData] = useState<Student | null>(null);
+
+  useEffect(() => {
+    setFormData(student);
+  }, [student]);
+
+  if (!isOpen || !formData) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
+        <h3 className="text-lg font-bold mb-4 text-gray-900">
+          Edit Data Siswa
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nama Lengkap
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              NISN
+            </label>
+            <input
+              type="text"
+              value={formData.nisn}
+              onChange={(e) =>
+                setFormData({ ...formData, nisn: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Kelas
+            </label>
+            <input
+              type="text"
+              value={formData.class}
+              onChange={(e) =>
+                setFormData({ ...formData, class: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Gender
+            </label>
+            <select
+              value={formData.gender}
+              onChange={(e) =>
+                setFormData({ ...formData, gender: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            >
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={() => onSave(formData)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+          >
+            Simpan Perubahan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface DailyReport {
   id: string;
@@ -107,7 +206,6 @@ interface ApiReport {
   status: ReportStatus;
   description?: string;
 }
-
 
 const DashboardHome = () => {
   const [presentCount, setPresentCount] = useState(0);
@@ -331,6 +429,11 @@ const DataMuridPage = () => {
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -360,16 +463,14 @@ const DataMuridPage = () => {
         const res = await fetch("/api/dashboard/sekolah");
         const data = await res.json();
         if (data.students) {
-          const mappedStudents = data.students.map(
-            (s: ApiStudent, index: number) => ({
-              id: s._id,
-              name: s.fullName,
-              nisn: s.username,
-              class: s.class || "X-A",
-              status: s.status || "Hadir",
-              gender: s.gender || "L",
-            })
-          );
+          const mappedStudents = data.students.map((s: ApiStudent) => ({
+            id: s._id,
+            name: s.fullName,
+            nisn: s.username,
+            class: s.class || "X-A",
+            status: s.status || "-",
+            gender: s.gender || "L",
+          }));
           setStudents(mappedStudents);
         }
       } catch (error) {
@@ -379,8 +480,56 @@ const DataMuridPage = () => {
     fetchStudents();
   }, []);
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus siswa ini?")) return;
+    try {
+      await fetch(`/api/dashboard/sekolah?studentId=${id}`, {
+        method: "DELETE",
+      });
+      setStudents((prev) => prev.filter((s) => s.id !== id));
+    } catch (error) {
+      console.error("Failed to delete", error);
+      alert("Gagal menghapus siswa");
+    }
+  };
+
+  const handleUpdate = async (updatedData: Student) => {
+    try {
+      await fetch("/api/dashboard/sekolah", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      });
+      setStudents((prev) =>
+        prev.map((s) => (s.id === updatedData.id ? updatedData : s))
+      );
+      setEditingStudent(null);
+    } catch (error) {
+      console.error("Failed to update", error);
+      alert("Gagal mengupdate siswa");
+    }
+  };
+
+  const filteredStudents = students.filter(
+    (s) =>
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.nisn.includes(searchTerm)
+  );
+
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const currentStudents = filteredStudents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className="space-y-6 animate-fade-in">
+      <EditStudentModal
+        student={editingStudent}
+        isOpen={!!editingStudent}
+        onClose={() => setEditingStudent(null)}
+        onSave={handleUpdate}
+      />
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-blue-900">Data Murid</h1>
@@ -430,6 +579,11 @@ const DataMuridPage = () => {
             <input
               type="text"
               placeholder="Cari nama atau NISN..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white text-gray-900"
             />
           </div>
@@ -459,12 +613,14 @@ const DataMuridPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {students.map((s, index) => (
+              {currentStudents.map((s, index) => (
                 <tr
                   key={s.id}
                   className="hover:bg-gray-50 transition-colors group"
                 >
-                  <td className="px-6 py-4 text-gray-500">{index + 1}</td>
+                  <td className="px-6 py-4 text-gray-500">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div
@@ -491,28 +647,26 @@ const DataMuridPage = () => {
                   <td className="px-6 py-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${
-                        s.status === "Hadir"
+                        s.status === "Sudah menerima"
                           ? "bg-green-100 text-green-700"
-                          : s.status === "Sakit"
-                          ? "bg-red-100 text-red-700"
-                          : s.status === "Belum Absen"
-                          ? "bg-gray-100 text-gray-500"
-                          : "bg-yellow-100 text-yellow-700"
+                          : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {s.status === "Hadir" && <Check size={10} />}
+                      {s.status === "Sudah menerima" && <Check size={10} />}
                       {s.status}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
+                        onClick={() => setEditingStudent(s)}
                         className="p-1.5 bg-white border border-gray-200 text-gray-600 rounded-md hover:text-blue-600 hover:border-blue-200 transition-colors"
                         title="Edit"
                       >
                         <Edit size={14} />
                       </button>
                       <button
+                        onClick={() => handleDelete(s.id)}
                         className="p-1.5 bg-white border border-gray-200 text-gray-600 rounded-md hover:text-red-600 hover:border-red-200 transition-colors"
                         title="Hapus"
                       >
@@ -530,12 +684,20 @@ const DataMuridPage = () => {
           <span>Menampilkan {students.length} data</span>
           <div className="flex gap-2">
             <button
-              className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              disabled
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={16} />
             </button>
-            <button className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <span className="flex items-center px-2 text-gray-600">
+              {currentPage} / {totalPages || 1}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <ChevronRight size={16} />
             </button>
           </div>
@@ -563,7 +725,7 @@ const LaporanPage = () => {
             month: "short",
             year: "numeric",
           }),
-          rawDate: new Date(r.createdAt), 
+          rawDate: new Date(r.createdAt),
           menu: r.title || "Menu Standar",
           totalStudents: r.totalStudents || 0,
           distributed: r.mealsDistributed || 0,
@@ -1383,7 +1545,6 @@ const LaporSesuatuPage = () => {
     </div>
   );
 };
-
 
 export default function SekolahDashboardPage() {
   const router = useRouter();

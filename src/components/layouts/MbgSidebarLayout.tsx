@@ -167,13 +167,13 @@ const DAERAH_MENU: MenuSection[] = [
         iconClass: "fas fa-chart-line",
         href: "/dashboard?tab=quality",
       },
-      {
-        key: "verifikasi",
-        label: "Verifikasi SPPG",
-        iconClass: "fas fa-file-signature",
-        href: "/dashboard?tab=verification",
-        badge: "7",
-      },
+      // {
+      //   key: "verifikasi",
+      //   label: "Verifikasi SPPG",
+      //   iconClass: "fas fa-file-signature",
+      //   href: "/dashboard?tab=verification",
+      //   badge: "7",
+      // },
       {
         key: "peringatan",
         label: "Peringatan",
@@ -219,14 +219,124 @@ const DAERAH_MENU: MenuSection[] = [
   },
 ];
 
+const PUSAT_MENU: MenuSection[] = [
+  {
+    title: "Menu Utama",
+    items: [
+      {
+        key: "dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        href: "/dashboard",
+      },
+      {
+        key: "distribusi",
+        label: "Distribusi Makanan",
+        icon: Utensils,
+        href: "/dashboard?tab=distribution",
+      },
+      {
+        key: "sekolah",
+        label: "Program Sekolah",
+        icon: School,
+        href: "/dashboard?tab=schools",
+      },
+      {
+        key: "quality",
+        label: "Laporan Kualitas",
+        icon: ChartLine,
+        href: "/dashboard?tab=quality",
+      },
+      // {
+      //   key: "verifikasi",
+      //   label: "Verifikasi SPPG",
+      //   icon: FileSignature,
+      //   href: "/dashboard?tab=verification",
+      //   badge: "7",
+      // },
+      {
+        key: "peringatan",
+        label: "Peringatan",
+        icon: AlertTriangle,
+        href: "/dashboard?tab=alerts",
+      },
+    ],
+  },
+  {
+    title: "Data & Analisis",
+    items: [
+      {
+        key: "reports",
+        label: "Laporan Wilayah",
+        icon: FileText,
+        href: "/dashboard?tab=reports",
+      },
+      {
+        key: "stats",
+        label: "Statistik Nasional",
+        icon: BarChart3,
+        href: "/dashboard?tab=stats",
+      },
+      {
+        key: "archive",
+        label: "Arsip Data",
+        icon: Archive,
+        href: "/dashboard?tab=archive",
+      },
+    ],
+  },
+  {
+    title: "Pengguna",
+    items: [
+      {
+        key: "users",
+        label: "Manajemen User",
+        icon: UserPlus,
+        href: "/dashboard?tab=addUser",
+      },
+    ],
+  },
+];
+
 const MENU_CONFIG: Record<string, MenuSection[]> = {
-  pusat: [{ title: "Menu Utama", items: UNIFIED_MENU }],
+  pusat: PUSAT_MENU,
   daerah: DAERAH_MENU,
   sekolah: [{ title: "Menu Utama", items: SEKOLAH_MENU }],
   mitra: [
     {
       title: "Menu Utama",
-      items: UNIFIED_MENU.filter((item) => item.key !== "users"),
+      items: [
+        {
+          key: "dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard,
+          href: "/dashboard",
+        },
+        {
+          key: "distribusi",
+          label: "Distribusi Makanan",
+          icon: Utensils,
+          href: "/dashboard?tab=distribution",
+        },
+        {
+          key: "sekolah",
+          label: "Sekolah yang Ditanggung",
+          icon: School,
+          href: "/dashboard?tab=schools",
+        },
+        {
+          key: "lapor",
+          label: "Lihat seluruh Laporan",
+          icon: Headset,
+          href: "/lapor",
+        },
+        {
+          key: "peringatan",
+          label: "Peringatan",
+          icon: AlertTriangle,
+          href: "/dashboard?tab=alerts",
+        },
+      ],
     },
   ],
   murid: [
@@ -299,7 +409,6 @@ export function MbgSidebarLayout({
 
   return (
     <div className="min-h-screen bg-[#f7f5f0] font-sans text-slate-900">
-      {/* Mobile Menu Toggle */}
       <button
         type="button"
         aria-label="Toggle menu"
@@ -310,7 +419,6 @@ export function MbgSidebarLayout({
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Backdrop */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-sm transition-opacity"

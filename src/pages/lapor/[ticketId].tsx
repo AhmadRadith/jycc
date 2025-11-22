@@ -22,7 +22,10 @@ import {
   RotateCcw,
   Eraser,
   Check,
+  Camera,
+  AlertCircle,
 } from "lucide-react";
+import { CameraCapture } from "@/components/CameraCapture";
 import { MbgSidebarLayout } from "@/components/layouts/MbgSidebarLayout";
 
 //canvas
@@ -640,6 +643,96 @@ const ManageStudentReportsModal = ({
   );
 };
 
+const dataURLtoFile = (dataurl: string, filename: string) => {
+  const arr = dataurl.split(",");
+  const mime = arr[0].match(/:(.*?);/)?.[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
+
+const PrioritySelectionModal = ({
+  isOpen,
+  onClose,
+  onSelect,
+  currentPriority,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (priority: string) => void;
+  currentPriority: string;
+}) => {
+  if (!isOpen) return null;
+
+  const priorities = [
+    {
+      value: "low",
+      label: "Low",
+      color: "bg-gray-100 text-gray-700 border-gray-200",
+    },
+    {
+      value: "medium",
+      label: "Medium",
+      color: "bg-blue-100 text-blue-700 border-blue-200",
+    },
+    {
+      value: "high",
+      label: "High",
+      color: "bg-orange-50 text-orange-700 border-orange-100",
+    },
+    {
+      value: "critical",
+      label: "Critical",
+      color: "bg-red-100 text-red-700 border-red-200",
+    },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+            <AlertCircle size={16} className="text-blue-600" />
+            Ubah Prioritas
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-4 space-y-2">
+          {priorities.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => onSelect(p.value)}
+              className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                currentPriority === p.value
+                  ? "bg-blue-50 border-blue-200 ring-1 ring-blue-200"
+                  : "bg-white border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <span
+                className={`px-2 py-0.5 rounded text-xs font-bold uppercase border ${p.color}`}
+              >
+                {p.label}
+              </span>
+              {currentPriority === p.value && (
+                <CheckCircle2 size={16} className="text-blue-600" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
   const [currentRole, setCurrentRole] = useState("pusat");
 
@@ -658,10 +751,12 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
   const [inputMessage, setInputMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const [assignedMitra, setAssignedMitra] = useState<string[]>([]);
   const [isManageReportsModalOpen, setIsManageReportsModalOpen] =
     useState(false);
+  const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
 
   // Fetch Ticket Data
   useEffect(() => {
@@ -822,7 +917,7 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
     }
   };
 
-  // --- Modal aksi and smth ---
+  // Modal aksi and smth
   const triggerAction = (action: string) => {
     setPendingAction(action);
     setIsSigModalOpen(true);
@@ -940,6 +1035,23 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
     }
   };
 
+  const handleUpdatePriority = async (newPriority: string) => {
+    try {
+      await fetch(`/api/lapor/${ticketId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority: newPriority }),
+      });
+
+      if (ticket) {
+        setTicket({ ...ticket, priority: newPriority });
+      }
+      setIsPriorityModalOpen(false);
+    } catch (error) {
+      console.error("Error updating priority:", error);
+    }
+  };
+
   const copyDraft = () => {
     if (advice.draftReply) setInputMessage(advice.draftReply);
   };
@@ -974,7 +1086,17 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
       contentClassName="min-h-screen bg-[#f7f5f0]"
       role={currentRole}
     >
-      <div className="p-6 md:p-8 max-w-7xl mx-auto animate-fade-in">
+      {showCamera && (
+        <CameraCapture
+          onCapture={(imgSrc) => {
+            const file = dataURLtoFile(imgSrc, "camera_capture.jpg");
+            setSelectedFile(file);
+            setShowCamera(false);
+          }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+      <div className="flex-1 w-full max-w-full px-4 py-6 animate-fade-in">
         <SignatureModal
           isOpen={isSigModalOpen}
           onClose={() => setIsSigModalOpen(false)}
@@ -996,6 +1118,13 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
             onSave={handleSaveReports}
           />
         )}
+
+        <PrioritySelectionModal
+          isOpen={isPriorityModalOpen}
+          onClose={() => setIsPriorityModalOpen(false)}
+          onSelect={handleUpdatePriority}
+          currentPriority={ticket?.priority || "medium"}
+        />
 
         {/* <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -1052,15 +1181,29 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                    Prioritas
-                  </span>
+                  <div className="flex justify-between items-end mb-1">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                      Prioritas
+                    </span>
+                    {currentRole !== "sekolah" && (
+                      <button
+                        onClick={() => setIsPriorityModalOpen(true)}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-medium flex items-center gap-0.5"
+                      >
+                        <PenTool size={10} /> Edit
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-1">
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
                         ticket.priority === "high"
                           ? "bg-orange-50 text-orange-700 border-orange-100"
-                          : "bg-gray-100 text-gray-700 border-gray-200"
+                          : ticket.priority === "critical"
+                          ? "bg-red-100 text-red-700 border-red-200"
+                          : ticket.priority === "low"
+                          ? "bg-gray-100 text-gray-700 border-gray-200"
+                          : "bg-blue-50 text-blue-700 border-blue-100"
                       }`}
                     >
                       {ticket!.priority.toUpperCase()}
@@ -1345,12 +1488,12 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
                 )}
 
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setShowCamera(true)}
                   disabled={!canContribute}
                   className="mb-1.5 text-gray-400 hover:text-blue-600 p-2.5 rounded-xl hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-blue-100"
-                  title="Upload Foto"
+                  title="Ambil Foto"
                 >
-                  <Paperclip size={20} />
+                  <Camera size={20} />
                 </button>
 
                 <textarea
@@ -1359,14 +1502,6 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
                   placeholder={`Ketik pesan sebagai ${currentRole.toUpperCase()}...`}
                   disabled={!canContribute}
                   className="flex-1 border border-gray-200 bg-gray-50 text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all shadow-sm h-[52px] focus:h-24 disabled:opacity-50 focus:bg-white"
-                />
-
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  accept="image/*"
-                  className="hidden"
                 />
 
                 <button

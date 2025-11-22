@@ -1,5 +1,5 @@
 import mongoose, { Schema, model, models } from "mongoose";
-//Skema user
+// Skema user
 const UserSchema = new Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }, 

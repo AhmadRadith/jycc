@@ -7,6 +7,8 @@ import StudentAttendance from "@/models/StudentAttendance";
 
 import { getSessionUserFromRequest } from "@/lib/session";
 
+import defLocale from "../../../locales/api.json"
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -15,7 +17,7 @@ export default async function handler(
 
   const session = getSessionUserFromRequest(req);
   if (!session) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: defLocale.UNAUTHORIZED });
   }
 
   const User = (await import("@/models/User")).User;
@@ -23,6 +25,31 @@ export default async function handler(
 
   if (!user) {
     return res.status(404).json({ error: "User not found" });
+  }
+
+  if (req.method === "DELETE") {
+    const { studentId } = req.query;
+    if (!studentId)
+      return res.status(400).json({ error: "Student ID required" });
+
+    await User.findByIdAndDelete(studentId);
+    await StudentAttendance.deleteMany({ studentId });
+
+    return res.status(200).json({ message: "Student deleted" });
+  }
+
+  if (req.method === "PUT") {
+    const { id, name, nisn, className, gender } = req.body;
+    if (!id) return res.status(400).json({ error: "Student ID required" });
+
+    await User.findByIdAndUpdate(id, {
+      fullName: name,
+      username: nisn,
+      class: className,
+      gender: gender,
+    });
+
+    return res.status(200).json({ message: "Student updated" });
   }
 
   const schoolId = user.schoolId || "school_001";
@@ -56,18 +83,32 @@ export default async function handler(
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const presentCount = await StudentAttendance.countDocuments({
+
+  const attendanceRecords = await StudentAttendance.find({
     schoolId,
     date: today,
     status: "received",
   });
 
+  const attendanceMap = new Set(attendanceRecords.map((r) => r.studentId));
+
+  const studentsWithStatus = students.map((s) => ({
+    _id: s._id,
+    fullName: s.fullName,
+    username: s.username,
+    class: s.class,
+    gender: s.gender,
+    status: attendanceMap.has(s._id.toString()) ? "Sudah menerima" : "-",
+  }));
+
+  const presentCount = attendanceRecords.length;
+
   res.status(200).json({
     stats,
-    reports: dailyReports, 
+    reports: dailyReports,
     dailyReports,
     studentReports,
-    students,
+    students: studentsWithStatus,
     presentCount,
     profile: {
       name: user.fullName,
