@@ -7,7 +7,7 @@ import StudentAttendance from "@/models/StudentAttendance";
 
 import { getSessionUserFromRequest } from "@/lib/session";
 
-import defLocale from "../../../locales/api.json"
+import defLocale from "../../../locales/api.json";
 
 export default async function handler(
   req: NextApiRequest,
@@ -98,7 +98,7 @@ export default async function handler(
     username: s.username,
     class: s.class,
     gender: s.gender,
-    status: attendanceMap.has(s._id.toString()) ? "Sudah menerima" : "-",
+    status: attendanceMap.has(s._id.toString()) ? "Hadir" : "Belum Hadir",
   }));
 
   const presentCount = attendanceRecords.length;

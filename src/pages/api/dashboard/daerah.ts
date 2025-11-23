@@ -93,7 +93,7 @@ export default async function handler(
         id: school._id,
         name: school.fullName,
         students: studentCount,
-        pic: school.username, 
+        pic: school.username,
         score: score,
         email: school.email,
         npsn: school.schoolId,
@@ -108,7 +108,7 @@ export default async function handler(
     pendingReports: await Report.countDocuments({
       ...reportFilter,
       status: "pending",
-    }), 
+    }),
     pendingReportsThisWeek: await Report.countDocuments({
       ...reportFilter,
       status: "pending",
@@ -116,12 +116,41 @@ export default async function handler(
     }),
     activeSchools: schools.length,
     totalStudents: schoolData.reduce((acc, curr) => acc + curr.students, 0),
+    weeklyScores: stats.weeklyScores || [
+      { name: "W1", score: 0 },
+      { name: "W2", score: 0 },
+      { name: "W3", score: 0 },
+      { name: "W4", score: 0 },
+    ],
   };
+
+  const verifications = daerahStats?.data?.verifications || [];
+  const demographics = daerahStats?.data?.demographics || [];
+  const budgetAbsorption = daerahStats?.data?.budgetAbsorption || [];
+  const archiveFolders = daerahStats?.data?.archiveFolders || [];
+  const distributionStats = daerahStats?.data?.distributionStats || [];
+  const nutritionStats = daerahStats?.data?.nutritionStats || [];
+
+  const distributionData = recentReports.map((r: any, idx: number) => ({
+    id: idx + 1,
+    school: r.schoolName || r.schoolId || "Sekolah",
+    menu: "Menu Standar",
+    qty: r.mealsDistributed || 450,
+    time: new Date(r.createdAt).toLocaleTimeString(),
+    status: r.status === "approved" ? "delivered" : "pending",
+  }));
 
   res.status(200).json({
     stats: finalStats,
     recentReports,
     alerts,
     schools: schoolData,
+    verifications,
+    distribution: distributionData,
+    demographics,
+    budgetAbsorption,
+    archiveFolders,
+    distributionStats,
+    nutritionStats,
   });
 }

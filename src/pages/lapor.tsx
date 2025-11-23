@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ArrowLeft,
   Send,
+  AlertCircle,
 } from "lucide-react";
 import { MbgSidebarLayout } from "@/components/layouts/MbgSidebarLayout";
 
@@ -73,7 +74,11 @@ export default function TicketLaporPage({ user }: TicketLaporPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [schoolFilter, setSchoolFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const [showSchoolMenu, setShowSchoolMenu] = useState(false);
 
   const [newTicket, setNewTicket] = useState({
@@ -145,6 +150,8 @@ export default function TicketLaporPage({ user }: TicketLaporPageProps) {
         }
 
         if (statusFilter !== "all") params.append("status", statusFilter);
+        if (categoryFilter !== "all") params.append("category", categoryFilter);
+        if (priorityFilter !== "all") params.append("priority", priorityFilter);
         if (searchTerm) params.append("search", searchTerm);
 
         const res = await fetch(`/api/lapor?${params.toString()}`);
@@ -162,7 +169,15 @@ export default function TicketLaporPage({ user }: TicketLaporPageProps) {
     };
 
     fetchTickets();
-  }, [currentRole, statusFilter, searchTerm, mitraList]);
+  }, [
+    currentRole,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    searchTerm,
+    mitraList,
+    user,
+  ]);
 
   const uniqueSchools = useMemo(() => {
     const schools = new Set(tickets.map((t) => t.schoolName));
@@ -197,6 +212,7 @@ export default function TicketLaporPage({ user }: TicketLaporPageProps) {
           studentName: report?.reporterId || "Siswa",
           summary: report?.title || "Laporan Siswa",
           time: new Date(report?.createdAt).getTime(),
+          attachment: report?.image,
         };
       }),
     };
@@ -371,6 +387,115 @@ export default function TicketLaporPage({ user }: TicketLaporPageProps) {
               )}
             </div>
           )}
+
+          {/* Category Filter */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCategoryMenu(!showCategoryMenu)}
+              className={`p-2 border rounded-lg hover:bg-white transition-colors flex items-center gap-2 ${
+                showCategoryMenu || categoryFilter !== "all"
+                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                  : "border-gray-300 text-gray-600 bg-white"
+              }`}
+            >
+              <Utensils size={18} />
+              {categoryFilter !== "all" && (
+                <span className="text-xs font-bold max-w-[100px] truncate">
+                  {categoryFilter}
+                </span>
+              )}
+            </button>
+
+            {showCategoryMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowCategoryMenu(false)}
+                ></div>
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase border-b border-gray-100 mb-1">
+                    Filter Kategori
+                  </div>
+                  {[
+                    "all",
+                    "Kualitas Makanan",
+                    "Operasional",
+                    "Logistik",
+                    "Kebersihan",
+                    "Lainnya",
+                  ].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setCategoryFilter(cat);
+                        setShowCategoryMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${
+                        categoryFilter === cat
+                          ? "text-blue-600 font-medium bg-blue-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <span>{cat === "all" ? "Semua Kategori" : cat}</span>
+                      {categoryFilter === cat && <CheckCircle2 size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Priority Filter */}
+          <div className="relative">
+            <button
+              onClick={() => setShowPriorityMenu(!showPriorityMenu)}
+              className={`p-2 border rounded-lg hover:bg-white transition-colors flex items-center gap-2 ${
+                showPriorityMenu || priorityFilter !== "all"
+                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                  : "border-gray-300 text-gray-600 bg-white"
+              }`}
+            >
+              <AlertCircle size={18} />
+              {priorityFilter !== "all" && (
+                <span className="text-xs font-bold uppercase">
+                  {priorityFilter}
+                </span>
+              )}
+            </button>
+
+            {showPriorityMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowPriorityMenu(false)}
+                ></div>
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase border-b border-gray-100 mb-1">
+                    Filter Prioritas
+                  </div>
+                  {["all", "low", "medium", "high"].map((prio) => (
+                    <button
+                      key={prio}
+                      onClick={() => {
+                        setPriorityFilter(prio);
+                        setShowPriorityMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${
+                        priorityFilter === prio
+                          ? "text-blue-600 font-medium bg-blue-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <span className="capitalize">
+                        {prio === "all" ? "Semua" : prio}
+                      </span>
+                      {priorityFilter === prio && <CheckCircle2 size={14} />}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="relative">
             <button

@@ -6,7 +6,6 @@ html,
 body,
 #__next {
   min-height: 100%;
-  /* Keep layout stable, individual pages control their own background */
   overflow-x: hidden;
 }
 
@@ -70,7 +69,6 @@ body {
 }
 
 @layer base {
-  /* Ensure form inputs always have visible text */
   input,
   textarea,
   select {
@@ -83,7 +81,6 @@ body {
     opacity: 0.7;
   }
 
-  /* Ensure dark mode compatibility - Force Light inputs for now as page is light */
   .dark input,
   .dark textarea,
   .dark select {
@@ -92,7 +89,6 @@ body {
     border-color: #cbd5e1;
   }
 
-  /* Fix for range slider track in dark mode */
   .dark input[type="range"] {
     background-color: #e2e8f0; /* slate-200 to match bg-gray-200 */
   }
@@ -103,7 +99,6 @@ body {
   }
 }
 
-/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;

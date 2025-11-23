@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Script from "next/script";
 
 import type { GetServerSideProps } from "next";
@@ -34,8 +28,9 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react";
-import { CameraCapture } from "@/components/CameraCapture";
-import { MbgSidebarLayout } from "@/components/layouts/MbgSidebarLayout";
+import { CameraCapture } from "../../components/CameraCapture";
+import { MbgSidebarLayout } from "../../components/layouts/MbgSidebarLayout";
+import SmartAssistant from "../../components/SmartAssistant";
 
 //canvas
 const useSignatureCanvas = () => {
@@ -370,6 +365,118 @@ interface StudentReport {
   attachment?: string;
 }
 
+// Ai sementara? (Apus aja nnti)
+const generateAIAdvice = (
+  role: string,
+  ticketStatus: string,
+  ticketData: TicketData,
+  comments: Comment[],
+  studentReports: StudentReport[],
+  currentMitraList: string[]
+) => {
+  const mitraStr = currentMitraList.join(", ");
+  const isEscalated = ticketStatus === "escalated";
+  const isResolved = ticketStatus === "resolved";
+  const isRejected = ticketStatus === "rejected";
+
+  // 1. Kasih konteks
+  let summary = `Tiket status '${ticketStatus.toUpperCase()}' di ${
+    ticketData.schoolName
+  }. `;
+  if (isEscalated) {
+    summary += "KASUS DIESKALASI. Memerlukan atensi MBG Pusat. ";
+  } else if (isResolved) {
+    summary += "KASUS TELAH DISETUJUI/SELESAI. ";
+  } else if (isRejected) {
+    summary += "KASUS DITOLAK. ";
+  } else {
+    summary += "Masih dalam penanganan level Daerah. ";
+  }
+  summary += `Isu utama: ${ticketData.title}.`;
+
+  // 2. Kasih info
+  const insights = [
+    `Kategori: ${ticketData.category}.`,
+    `Prioritas: ${ticketData.priority.toUpperCase()}.`,
+  ];
+
+  if (ticketData.studentReports && ticketData.studentReports.length > 0) {
+    insights.push(
+      `Terdapat ${ticketData.studentReports.length} laporan siswa terkait.`
+    );
+  }
+
+  if (isEscalated) {
+    insights.push(
+      "STATUS ESKALASI: Daerah memerlukan intervensi Pusat/Kebijakan."
+    );
+  } else if (!isResolved && !isRejected) {
+    insights.push(`Menunggu verifikasi dengan ${mitraStr || "Mitra"}.`);
+  }
+
+  let guidance = "";
+  let nextSteps: string[] = [];
+  let draftReply = "";
+  let statusAdvice = "";
+
+  switch (role) {
+    case "pusat":
+      if (!isEscalated) {
+        guidance = "TIKET BELUM DIESKALASI. Anda berada dalam mode MONITORING.";
+        nextSteps = [
+          "Pantau perkembangan investigasi Daerah.",
+          "Intervensi hanya jika waktu penyelesaian > 48 jam.",
+        ];
+        draftReply = "";
+        statusAdvice = "Menunggu Eskalasi dari Daerah.";
+      } else {
+        guidance =
+          "TIKET DIESKALASI. Daerah meminta bantuan. Silakan berikan arahan.";
+        nextSteps = [
+          "Review bukti foto dan laporan siswa.",
+          "Berikan instruksi kepada Daerah.",
+        ];
+        draftReply =
+          "Terima laporan eskalasi. Kami akan segera meninjau dan memberikan instruksi lebih lanjut.";
+        statusAdvice = "Kasus dalam penanganan Pusat.";
+      }
+      break;
+
+    case "daerah":
+      guidance = isEscalated
+        ? "Tiket telah dieskalasi. Tunggu arahan MBG Pusat."
+        : "Investigasi lapangan. Gunakan tombol aksi di bawah untuk mengambil keputusan.";
+      nextSteps = isEscalated
+        ? ["Monitor arahan dari Pusat."]
+        : [
+            "Hubungi PIC Mitra untuk klarifikasi.",
+            "Klik ESCALATE jika butuh bantuan Pusat.",
+            "Klik APPROVE jika isu selesai.",
+          ];
+      draftReply = isEscalated
+        ? "Mohon arahan Pusat terkait langkah selanjutnya."
+        : "Kami sedang mendalami laporan ini dengan Mitra. Mohon Sekolah standby.";
+      statusAdvice = "Wewenang status ada pada Anda.";
+      break;
+
+    case "sekolah":
+      guidance =
+        "Tetap berikan data lapangan (foto/laporan siswa) untuk membantu investigasi.";
+      nextSteps = [
+        "Unggah foto kondisi terbaru.",
+        "Laporkan jika ada perubahan signifikan.",
+      ];
+      draftReply = "Kondisi lapangan saat ini sedang kami pantau.";
+      statusAdvice = "Menunggu proses helpdesk.";
+      break;
+
+    default:
+      guidance = "Pilih peran.";
+  }
+
+  return { summary, insights, guidance, nextSteps, draftReply, statusAdvice };
+};
+
 // Komponen laen
 
 const RoleBadge = ({ role }: { role: string }) => {
@@ -692,7 +799,7 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
+  const [isThinking, setIsThinking] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -770,49 +877,67 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
     return false;
   }, [currentRole, ticketStatus]);
 
-  const [advice, setAdvice] = useState({
-    summary: "",
-    insights: [] as string[],
-    guidance: "",
-    nextSteps: [] as string[],
-    draftReply: "",
-    statusAdvice: "",
-  });
-  const [loadingAdvice, setLoadingAdvice] = useState(false);
+  const advice = useMemo(() => {
+    if (!ticket) {
+      return {
+        summary: "",
+        insights: [],
+        guidance: "",
+        nextSteps: [],
+        draftReply: "",
+        statusAdvice: "",
+      };
+    }
+    return generateAIAdvice(
+      currentRole,
+      ticketStatus,
+      ticket,
+      comments,
+      ticket.studentReports || [],
+      assignedMitra
+    );
+  }, [currentRole, ticketStatus, comments, assignedMitra, ticket]);
 
-  const fetchAdvice = useCallback(
-    (forceRefresh = false) => {
-      if (ticket && currentRole) {
-        setLoadingAdvice(true);
-        fetch("/api/lapor/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            role: currentRole,
-            ticket: ticket,
-            ticketId: ticket.id || (ticket as any)._id,
-            comments: comments,
-            studentReports: ticket.studentReports || [],
-            assignedMitra: assignedMitra,
-            forceRefresh,
-          }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data && !data.error) {
-              setAdvice(data);
-            }
-          })
-          .catch((err) => console.error("Failed to fetch advice:", err))
-          .finally(() => setLoadingAdvice(false));
-      }
-    },
-    [ticket, currentRole, comments, assignedMitra]
-  );
+  const formattedAdvice = useMemo(() => {
+    if (!advice.summary) return [];
+
+    let text = `**Ringkasan Situasi**\n${advice.summary}\n\n`;
+
+    if (advice.insights.length > 0) {
+      text += `**Analisis Tiket**\n`;
+      advice.insights.forEach((insight) => {
+        text += `- ${insight}\n`;
+      });
+      text += `\n`;
+    }
+
+    text += `**Rekomendasi: ${currentRole.toUpperCase()}**\n${
+      advice.guidance
+    }\n\n`;
+
+    if (advice.nextSteps.length > 0) {
+      advice.nextSteps.forEach((step, i) => {
+        text += `${i + 1}. ${step}\n`;
+      });
+      text += `\n`;
+    }
+
+    if (advice.draftReply) {
+      text += `**Draft Balasan Cepat**\n"${advice.draftReply}"\n\n`;
+    }
+
+    if (advice.statusAdvice) {
+      text += `*Status Advice: ${advice.statusAdvice}*`;
+    }
+
+    return [{ role: "assistant" as const, text }];
+  }, [advice, currentRole]);
 
   useEffect(() => {
-    fetchAdvice();
-  }, [fetchAdvice]);
+    setIsThinking(true);
+    const timer = setTimeout(() => setIsThinking(false), 600);
+    return () => clearTimeout(timer);
+  }, [currentRole, ticketStatus]);
 
   const handleRemoveFile = () => {
     setSelectedFile(null);
@@ -1053,7 +1178,7 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
     >
       {showCamera && (
         <CameraCapture
-          onCapture={(imgSrc) => {
+          onCapture={(imgSrc: string) => {
             const file = dataURLtoFile(imgSrc, "camera_capture.jpg");
             setSelectedFile(file);
             setShowCamera(false);
@@ -1513,7 +1638,7 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
             </div>
           </div>
 
-          <div className="lg:col-span-3 flex flex-col gap-6 h-[calc(100vh-140px)]">
+          <div className="lg:col-span-3 flex flex-col gap-6">
             {/* Smart Assistant (Prototype) */}
             <div
               className={`bg-white rounded-xl shadow-lg border-t-4 ${
@@ -1539,20 +1664,12 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
                       </p>
                     </div>
                   </div>
-                  {loadingAdvice ? (
+                  {isThinking && (
                     <div className="flex gap-1">
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce delay-75"></span>
                       <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce delay-150"></span>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => fetchAdvice(true)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
-                      title="Perbarui Analisis"
-                    >
-                      <RotateCcw size={14} />
-                    </button>
                   )}
                 </div>
               </div>
@@ -1564,12 +1681,12 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
                     <FileText size={14} /> Ringkasan Situasi
                   </h4>
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {advice.summary || "Menunggu analisis..."}
+                    {advice.summary}
                   </p>
                 </div>
 
                 {/* Analisis */}
-                {advice.insights && advice.insights.length > 0 && (
+                {advice.insights.length > 0 && (
                   <div>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                       <Sparkles size={14} /> Analisis Tiket
@@ -1610,12 +1727,12 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
                     <Bot size={14} /> Rekomendasi: {currentRole.toUpperCase()}
                   </h4>
                   <p className="text-sm text-gray-800 font-medium leading-relaxed">
-                    {advice.guidance || "Tidak ada rekomendasi khusus."}
+                    {advice.guidance}
                   </p>
                 </div>
 
                 {/* Next Steps */}
-                {advice.nextSteps && advice.nextSteps.length > 0 && (
+                {advice.nextSteps.length > 0 && (
                   <div>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                       <ArrowRightCircle size={14} /> Langkah Selanjutnya
@@ -1667,52 +1784,50 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
             </div>
 
             {/* Action Buttons (Moved out of the prototype card) */}
-            {currentRole !== "sekolah" && currentRole !== "mitra" && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                  Tindakan
-                </h3>
-                {currentRole === "daerah" ||
-                (currentRole === "pusat" && ticketStatus === "escalated") ? (
-                  <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                Tindakan
+              </h3>
+              {currentRole === "daerah" ||
+              (currentRole === "pusat" && ticketStatus === "escalated") ? (
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => triggerAction("Approve")}
+                    className="flex flex-col items-center justify-center p-2 bg-white border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all group"
+                  >
+                    <span className="text-xs font-bold text-green-700 mb-1">
+                      APPROVE
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => triggerAction("Reject")}
+                    className="flex flex-col items-center justify-center p-2 bg-white border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all group"
+                  >
+                    <span className="text-xs font-bold text-red-700 mb-1">
+                      REJECT
+                    </span>
+                  </button>
+                  {currentRole === "daerah" && (
                     <button
-                      onClick={() => triggerAction("Approve")}
-                      className="flex flex-col items-center justify-center p-2 bg-white border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all group"
+                      onClick={() => triggerAction("Escalate")}
+                      disabled={ticketStatus === "escalated"}
+                      className={`flex flex-col items-center justify-center p-2 border rounded-lg transition-all shadow-sm ${
+                        ticketStatus === "escalated"
+                          ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed"
+                          : "bg-gray-800 border-gray-900 hover:bg-gray-700 text-white"
+                      }`}
                     >
-                      <span className="text-xs font-bold text-green-700 mb-1">
-                        APPROVE
-                      </span>
+                      <span className="text-xs font-bold mb-1">ESCALATE</span>
                     </button>
-                    <button
-                      onClick={() => triggerAction("Reject")}
-                      className="flex flex-col items-center justify-center p-2 bg-white border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all group"
-                    >
-                      <span className="text-xs font-bold text-red-700 mb-1">
-                        REJECT
-                      </span>
-                    </button>
-                    {currentRole === "daerah" && (
-                      <button
-                        onClick={() => triggerAction("Escalate")}
-                        disabled={ticketStatus === "escalated"}
-                        className={`flex flex-col items-center justify-center p-2 border rounded-lg transition-all shadow-sm ${
-                          ticketStatus === "escalated"
-                            ? "bg-gray-300 border-gray-400 text-gray-500 cursor-not-allowed"
-                            : "bg-gray-800 border-gray-900 hover:bg-gray-700 text-white"
-                        }`}
-                      >
-                        <span className="text-xs font-bold mb-1">ESCALATE</span>
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 text-gray-400 text-xs py-2 bg-gray-100 rounded-lg border border-gray-200 border-dashed">
-                    <Lock size={12} />
-                    <span>Menu aksi terkunci untuk peran {currentRole}</span>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-gray-400 text-xs py-2 bg-gray-100 rounded-lg border border-gray-200 border-dashed">
+                  <Lock size={12} />
+                  <span>Menu aksi terkunci untuk peran {currentRole}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1726,11 +1841,9 @@ export default function TicketDetailPage({ ticketId }: TicketDetailPageProps) {
 
 export const getServerSideProps: GetServerSideProps<
   TicketDetailPageProps
-> = async ({ params }) => {
-  const rawTicketId = params?.ticketId;
-  const resolvedTicketId = Array.isArray(rawTicketId)
-    ? rawTicketId[0] ?? ""
-    : rawTicketId ?? "";
+> = async () => {
+  // Hardcoded ticket ID for testing
+  const resolvedTicketId = "6921ea70dd8232202bd73338";
 
   return {
     props: {

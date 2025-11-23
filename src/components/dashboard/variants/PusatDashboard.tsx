@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import {
   ResponsiveContainer,
@@ -24,6 +25,7 @@ import {
   Search,
   Bell,
   User,
+  Users,
   ArrowUp,
   ArrowDown,
   Filter,
@@ -46,6 +48,9 @@ import {
   LayoutDashboard,
   Headset,
   XCircle,
+  Edit,
+  Trash2,
+  EyeOff,
 } from "lucide-react";
 import { MbgSidebarLayout } from "@/components/layouts/MbgSidebarLayout";
 import type { DashboardVariant } from "../types";
@@ -114,33 +119,31 @@ const formatRelativeTime = (dateInput: string | number | Date) => {
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
-// komponen
+const DistributionPage = ({ data }: { data: any[] }) => {
+  // const [data, setData] = useState<any[]>([]);
 
-const DistributionPage = () => {
-  const [data, setData] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/dashboard/pusat");
-        const json = await res.json();
-        if (json.recentReports) {
-          const mappedData = json.recentReports.map((r: any, idx: number) => ({
-            id: idx + 1,
-            school: r.schoolId || "Sekolah",
-            menu: "Menu Standar",
-            qty: 450,
-            time: new Date(r.createdAt).toLocaleTimeString(),
-            status: r.status === "approved" ? "delivered" : "pending",
-          }));
-          setData(mappedData);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      }
-    };
-    fetchData();
-  }, []);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/pusat");
+  //       const json = await res.json();
+  //       if (json.recentReports) {
+  //         const mappedData = json.recentReports.map((r: any, idx: number) => ({
+  //           id: idx + 1,
+  //           school: r.schoolId || "Sekolah",
+  //           menu: "Menu Standar",
+  //           qty: 450,
+  //           time: new Date(r.createdAt).toLocaleTimeString(),
+  //           status: r.status === "approved" ? "delivered" : "pending",
+  //         }));
+  //         setData(mappedData);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch dashboard data", error);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -148,9 +151,9 @@ const DistributionPage = () => {
         <h2 className="text-2xl font-bold text-blue-900">
           Monitor Distribusi Makanan (Nasional)
         </h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
+        {/* <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
           <Truck size={16} /> Lacak Armada
-        </button>
+        </button> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -231,27 +234,29 @@ const DistributionPage = () => {
   );
 };
 
-const SchoolProgramPage = () => {
+const SchoolProgramPage = ({ schools }: { schools: any[] }) => {
   const router = useRouter();
-  const [schools, setSchools] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [schools, setSchools] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const res = await fetch("/api/dashboard/pusat");
-        const data = await res.json();
-        if (data.schools) {
-          setSchools(data.schools);
-        }
-      } catch (error) {
-        console.error("Failed to fetch schools", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSchools();
-  }, []);
+  // useEffect(() => {
+  //   const fetchSchools = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/pusat");
+  //       const data = await res.json();
+  //       if (data.schools) {
+  //         setSchools(data.schools);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch schools", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchSchools();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -273,7 +278,7 @@ const SchoolProgramPage = () => {
             key={school.id}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all group"
           >
-            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4 mx-auto group-hover:scale-110 transition-transform">
               <School size={28} />
             </div>
             <div className="text-center mb-4">
@@ -285,45 +290,169 @@ const SchoolProgramPage = () => {
                   <User size={12} /> {school.pic}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Utensils size={12} /> {school.students}
+                  <Users size={12} /> {school.students}
                 </span>
               </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center mb-4">
+            {/* <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center mb-4">
               <span className="text-xs font-medium text-gray-500">
                 Skor Kepatuhan
               </span>
               <span className="text-sm font-bold text-green-600">
                 {school.score}%
               </span>
-            </div>
-            <button className="w-full py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+            </div> */}
+            <button
+              onClick={() => {
+                setSelectedSchool(school);
+                setShowModal(true);
+              }}
+              className="w-full py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+            >
               Detail
             </button>
           </div>
         ))}
       </div>
+
+      {showModal &&
+        selectedSchool &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl transform transition-all scale-100 overflow-hidden">
+              <div className="bg-blue-600 p-6 flex justify-between items-center text-white">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <School className="text-blue-200" /> Detail Sekolah
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 hover:bg-blue-700 rounded-full transition-colors"
+                >
+                  <XCircle size={24} />
+                </button>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
+                    <School size={32} />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-900">
+                      {selectedSchool.name}
+                    </h4>
+                    <p className="text-gray-500 text-sm">
+                      NPSN: {selectedSchool.npsn}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                      PIC / Kepala Sekolah
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                      <User size={16} className="text-blue-500" />
+                      {selectedSchool.pic}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                      Jumlah Siswa
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                      <Users size={16} className="text-orange-500" />
+                      {selectedSchool.students} Siswa
+                    </div>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                      Wilayah
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                      <MapPin size={16} className="text-red-500" />
+                      {selectedSchool.district}
+                    </div>
+                  </div>
+                  {/* <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                    Skor Kepatuhan
+                  </div>
+                  <div className="font-semibold text-green-600 flex items-center gap-2">
+                    <CheckCircle size={16} />
+                    {selectedSchool.score}%
+                  </div>
+                </div> */}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-500 font-medium">
+                    Kontak Email
+                  </div>
+                  <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg text-gray-700 bg-white">
+                    <div className="bg-blue-100 p-1.5 rounded-md text-blue-600">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                    </div>
+                    {selectedSchool.email || "Tidak ada email"}
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
 
-const QualityReportPage = () => {
-  const [schools, setSchools] = useState<any[]>([]);
+const QualityReportPage = ({
+  schools,
+  weeklyScores,
+}: {
+  schools: any[];
+  weeklyScores: any[];
+}) => {
+  // const [schools, setSchools] = useState<any[]>([]);
+  // const [weeklyScores, setWeeklyScores] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const res = await fetch("/api/dashboard/pusat");
-        const data = await res.json();
-        if (data.schools) {
-          setSchools(data.schools);
-        }
-      } catch (error) {
-        console.error("Failed to fetch schools", error);
-      }
-    };
-    fetchSchools();
-  }, []);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/pusat");
+  //       const data = await res.json();
+  //       if (data.schools) {
+  //         setSchools(data.schools);
+  //       }
+  //       if (data.stats && data.stats.weeklyScores) {
+  //         setWeeklyScores(data.stats.weeklyScores);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch data", error);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -399,16 +528,9 @@ const QualityReportPage = () => {
               Tren Kualitas Bulan Ini
             </h3>
           </div>
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={[
-                  { name: "W1", score: 8.5 },
-                  { name: "W2", score: 8.2 },
-                  { name: "W3", score: 8.8 },
-                  { name: "W4", score: 9.0 },
-                ]}
-              >
+              <AreaChart data={weeklyScores}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 12 }} />
@@ -532,28 +654,28 @@ const VerificationPage = () => {
   );
 };
 
-const AlertsPage = () => {
+const AlertsPage = ({ alerts }: { alerts: any[] }) => {
   const router = useRouter();
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      try {
-        const res = await fetch("/api/dashboard/pusat");
-        const data = await res.json();
-        if (data.alerts) {
-          setAlerts(data.alerts);
-        }
-      } catch (error) {
-        console.error("Failed to fetch alerts", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchAlerts = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/pusat");
+  //       const data = await res.json();
+  //       if (data.alerts) {
+  //         setAlerts(data.alerts);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch alerts", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchAlerts();
-  }, []);
+  //   fetchAlerts();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -563,7 +685,7 @@ const AlertsPage = () => {
       <div className="space-y-4">
         {loading && (
           <div className="bg-white p-8 rounded-xl text-center text-gray-500 border border-gray-100">
-            Memuat peringatan terbaru...
+            Memuat data pusat dashboard...
           </div>
         )}
         {!loading && alerts.length === 0 && (
@@ -648,7 +770,7 @@ const StatsPage = () => {
               Efisiensi Penyerapan Anggaran
             </h3>
           </div>
-          <div className="h-72">
+          <div className="h-72 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -774,146 +896,350 @@ const ArchivePage = () => {
 };
 
 const AddUserPage = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [daerahUsers, setDaerahUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
-    npsn: "",
-    name: "",
-    principal: "",
+    username: "",
+    password: "password123",
+    fullName: "",
     email: "",
     district: "",
   });
 
-  const [mitras, setMitras] = useState<any[]>([]);
-  const [loadingMitras, setLoadingMitras] = useState(false);
-
   useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const res = await fetch("/api/dashboard/pusat");
-        const data = await res.json();
-        if (data.schools) {
-          setUsers(data.schools);
-        }
-      } catch (error) {
-        console.error("Failed to fetch schools", error);
-      }
-    };
-    fetchSchools();
-    fetchMitras();
+    fetchDaerahUsers();
   }, []);
 
-  const fetchMitras = async () => {
-    setLoadingMitras(true);
+  const fetchDaerahUsers = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/users/mitra");
+      const res = await fetch("/api/users/daerah");
       const data = await res.json();
       if (data.ok) {
-        setMitras(data.mitras);
+        setDaerahUsers(data.users);
       }
     } catch (error) {
-      console.error("Failed to fetch mitras", error);
+      console.error("Failed to fetch daerah users", error);
     } finally {
-      setLoadingMitras(false);
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.username || !formData.fullName) return;
+
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          role: "daerah",
+        }),
+      });
+
+      const data = await res.json();
+      if (data.ok) {
+        alert("Akun Daerah berhasil ditambahkan!");
+        setFormData({
+          username: "",
+          password: "password123",
+          fullName: "",
+          email: "",
+          district: "",
+        });
+        fetchDaerahUsers();
+      } else {
+        alert(`Gagal menambahkan akun: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error creating user:", error);
+      alert("Terjadi kesalahan saat menambahkan akun.");
     }
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h2 className="text-2xl font-bold text-blue-900">Manajemen User</h2>
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-semibold text-blue-900 mb-4">
-          Daftar Sekolah & Mitra
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
-              <tr>
-                <th className="px-6 py-4">Nama</th>
-                <th className="px-6 py-4">Role</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">Wilayah</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-              {users.map((user) => (
-                <tr
-                  key={user.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 font-medium text-blue-900">
-                    {user.name}
-                  </td>
-                  <td className="px-6 py-4">Sekolah</td>
-                  <td className="px-6 py-4">{user.email}</td>
-                  <td className="px-6 py-4">{user.district}</td>
+      <h2 className="text-2xl font-bold text-blue-900">
+        Manajemen Akun Daerah
+      </h2>
+
+      <div className="grid grid-cols-1 gap-8">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-blue-900">
+              Tambah Akun Daerah Baru
+            </h3>
+            <p className="text-sm text-gray-500">
+              Buat akun untuk admin wilayah (Kabupaten/Kota).
+            </p>
+          </div>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Wilayah / Dinas
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  placeholder="Contoh: Dinas Pendidikan Surabaya"
+                  required
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Username Login
+                </label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  placeholder="admin_surabaya"
+                  required
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Penanggung Jawab
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="admin@surabaya.go.id"
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password Default
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Password"
+                    required
+                    className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-10 text-gray-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Wilayah (Kota/Kab)
+                </label>
+                <input
+                  type="text"
+                  name="district"
+                  value={formData.district}
+                  onChange={handleInputChange}
+                  placeholder="Surabaya"
+                  className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                onClick={() =>
+                  setFormData({
+                    username: "",
+                    password: "password123",
+                    fullName: "",
+                    email: "",
+                    district: "",
+                  })
+                }
+              >
+                Reset
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Buat Akun Daerah
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-blue-900">
+              Daftar Akun Daerah
+            </h3>
+            <div className="flex gap-2">
+              <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                <Search size={14} /> Cari
+              </button>
+              <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                <Download size={14} /> Export
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
+                <tr>
+                  <th className="px-6 py-4">Nama Wilayah</th>
+                  <th className="px-6 py-4">Username</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Wilayah</th>
+                  <th className="px-6 py-4">Aksi</th>
                 </tr>
-              ))}
-              {mitras.map((mitra) => (
-                <tr
-                  key={mitra._id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4 font-medium text-blue-900">
-                    {mitra.fullName}
-                  </td>
-                  <td className="px-6 py-4">Mitra</td>
-                  <td className="px-6 py-4">{mitra.username}</td>
-                  <td className="px-6 py-4">-</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                {daerahUsers.map((user) => (
+                  <tr
+                    key={user._id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-bold text-blue-900">
+                      {user.fullName}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-gray-500">
+                      {user.username}
+                    </td>
+                    <td className="px-6 py-4">{user.email}</td>
+                    <td className="px-6 py-4">{user.district}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {daerahUsers.length === 0 && !loading && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-8 text-center text-gray-400"
+                    >
+                      Belum ada akun daerah.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const DashboardHome = ({ variant }: { variant?: DashboardVariant | null }) => {
+const DashboardHome = ({
+  variant,
+  data,
+  loading,
+  error,
+}: {
+  variant?: DashboardVariant | null;
+  data: any;
+  loading: boolean;
+  error: string | null;
+}) => {
   const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
   const [stats, setStats] = useState<PusatStats | null>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await fetch("/api/dashboard/pusat");
-        if (!res.ok) {
-          throw new Error("Failed to fetch dashboard data");
-        }
-        const data = await res.json();
-        if (data.recentReports) {
-          const mappedReports = data.recentReports.map((r: ApiPusatReport) => ({
-            id: r._id,
-            name: r.schoolId || "Sekolah",
-            location: r.district || "Jawa Timur",
-            date: new Date(r.createdAt).toLocaleString(),
-            type: r.category,
-            status: r.status,
-          }));
-          setReports(mappedReports);
-        }
-        if (data.stats) {
-          setStats(data.stats);
-        }
-        if (data.alerts) {
-          setAlerts(data.alerts);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-        setError(error instanceof Error ? error.message : "An error occurred");
-      } finally {
-        setLoading(false);
+    if (data) {
+      if (data.recentReports) {
+        const mappedReports = data.recentReports.map((r: ApiPusatReport) => ({
+          id: r._id,
+          name: r.schoolId || "Sekolah",
+          location: r.district || "Jawa Timur",
+          date: new Date(r.createdAt).toLocaleString(),
+          type: r.category,
+          status: r.status,
+        }));
+        setReports(mappedReports);
       }
-    };
-    fetchData();
-  }, []);
+      if (data.stats) {
+        setStats(data.stats);
+      }
+      if (data.alerts) {
+        setAlerts(data.alerts);
+      }
+    }
+  }, [data]);
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       setLoading(true);
+  //       setError(null);
+  //       const res = await fetch("/api/dashboard/pusat");
+  //       if (!res.ok) {
+  //         throw new Error("Failed to fetch dashboard data");
+  //       }
+  //       const data = await res.json();
+  //       if (data.recentReports) {
+  //         const mappedReports = data.recentReports.map((r: ApiPusatReport) => ({
+  //           id: r._id,
+  //           name: r.schoolId || "Sekolah",
+  //           location: r.district || "Jawa Timur",
+  //           date: new Date(r.createdAt).toLocaleString(),
+  //           type: r.category,
+  //           status: r.status,
+  //         }));
+  //         setReports(mappedReports);
+  //       }
+  //       if (data.stats) {
+  //         setStats(data.stats);
+  //       }
+  //       if (data.alerts) {
+  //         setAlerts(data.alerts);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch dashboard data", error);
+  //       setError(error instanceof Error ? error.message : "An error occurred");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
 
   const distributionData = stats?.distributionData || [];
 
@@ -1002,7 +1328,9 @@ const DashboardHome = ({ variant }: { variant?: DashboardVariant | null }) => {
       {loading && (
         <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
           <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-blue-900 font-medium">Memuat data dashboard...</p>
+          <p className="text-blue-900 font-medium">
+            Memuat data pusat dashboard...
+          </p>
         </div>
       )}
 
@@ -1337,21 +1665,30 @@ const PusatDashboard = ({ variant }: PusatDashboardProps) => {
   const { tab } = router.query;
   const activeTab = (Array.isArray(tab) ? tab[0] : tab) || "dashboard";
   const [alertCount, setAlertCount] = useState(0);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAlertCount = async () => {
+    const fetchAllData = async () => {
       try {
+        setLoading(true);
         const res = await fetch("/api/dashboard/pusat");
         const data = await res.json();
+        setDashboardData(data);
+
         const alertsLen = Array.isArray(data.alerts) ? data.alerts.length : 0;
         if (alertsLen > 0) {
           setAlertCount(alertsLen);
         }
       } catch (error) {
-        console.error("Failed to fetch alert count", error);
+        console.error("Failed to fetch dashboard data", error);
+        setError("Gagal memuat data dashboard.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchAlertCount();
+    fetchAllData();
   }, []);
 
   const getActiveMenu = () => {
@@ -1382,19 +1719,44 @@ const PusatDashboard = ({ variant }: PusatDashboardProps) => {
   };
 
   const renderContent = () => {
+    // Helper to extract distribution data for DistributionPage
+    const getDistributionData = () => {
+      if (!dashboardData?.recentReports) return [];
+      return dashboardData.recentReports.map((r: any, idx: number) => ({
+        id: idx + 1,
+        school: r.schoolId || "Sekolah",
+        menu: "Menu Standar",
+        qty: 450,
+        time: new Date(r.createdAt).toLocaleTimeString(),
+        status: r.status === "approved" ? "delivered" : "pending",
+      }));
+    };
+
     switch (activeTab) {
       case "dashboard":
-        return <DashboardHome variant={variant} />;
+        return (
+          <DashboardHome
+            variant={variant}
+            data={dashboardData}
+            loading={loading}
+            error={error}
+          />
+        );
       case "distribution":
-        return <DistributionPage />;
+        return <DistributionPage data={getDistributionData()} />;
       case "schools":
-        return <SchoolProgramPage />;
+        return <SchoolProgramPage schools={dashboardData?.schools || []} />;
       case "quality":
-        return <QualityReportPage />;
+        return (
+          <QualityReportPage
+            schools={dashboardData?.schools || []}
+            weeklyScores={dashboardData?.stats?.weeklyScores || []}
+          />
+        );
       case "verification":
         return <VerificationPage />;
       case "alerts":
-        return <AlertsPage />;
+        return <AlertsPage alerts={dashboardData?.alerts || []} />;
       case "reports":
         return (
           <div className="space-y-6 animate-fade-in">
@@ -1413,7 +1775,14 @@ const PusatDashboard = ({ variant }: PusatDashboardProps) => {
       case "addUser":
         return <AddUserPage />;
       default:
-        return <DashboardHome variant={variant} />;
+        return (
+          <DashboardHome
+            variant={variant}
+            data={dashboardData}
+            loading={loading}
+            error={error}
+          />
+        );
     }
   };
 
@@ -1433,9 +1802,6 @@ const PusatDashboard = ({ variant }: PusatDashboardProps) => {
 
 export default PusatDashboard;
 
-{
-  /* Styles from tka.tsx */
-}
 <style jsx global>{`
   @keyframes fadeSlideUp {
     from {

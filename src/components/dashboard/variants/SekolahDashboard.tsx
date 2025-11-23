@@ -193,7 +193,7 @@ interface ApiStudent {
   fullName: string;
   username: string;
   class?: string;
-  status?: "Hadir" | "Sakit" | "Izin" | "Alpha" | "Belum Absen";
+  status?: "Hadir" | "Belum Hadir";
   gender?: "L" | "P";
 }
 
@@ -207,8 +207,9 @@ interface ApiReport {
   description?: string;
 }
 
-const DashboardHome = () => {
+const DashboardHome = ({ data, loading }: { data: any; loading: boolean }) => {
   const [presentCount, setPresentCount] = useState(0);
+  // const [loading, setLoading] = useState(true);
   const [schoolProfile, setSchoolProfile] = useState({
     name: "Loading...",
     province: "Loading...",
@@ -218,45 +219,86 @@ const DashboardHome = () => {
   const [reports, setReports] = useState<DashboardReport[]>([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/dashboard/sekolah");
-        const data = await res.json();
-        if (data.stats) setStats(data.stats);
-        if (data.profile) setSchoolProfile(data.profile);
-        if (data.reports) {
-          const mappedReports: DashboardReport[] = data.reports.map(
-            (r: ApiReport) => ({
-              id: r._id,
-              date: new Date(r.createdAt).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              }),
-              menu: r.title,
-              totalStudents: r.totalStudents,
-              distributed: r.mealsDistributed,
-              status: r.status,
-              notes: r.description,
-            })
-          );
-          setReports(mappedReports);
-        }
-
-        if (typeof data.presentCount === "number") {
-          setPresentCount(data.presentCount);
-        } else if (data.students) {
-          const present = data.students.filter(
-            (s: any) => s.status === "Hadir"
-          ).length;
-          setPresentCount(present);
-        }
-      } catch (error) {
-        console.error("Failed to fetch school dashboard data", error);
+    if (data) {
+      if (data.stats) setStats(data.stats);
+      if (data.profile) setSchoolProfile(data.profile);
+      if (data.reports) {
+        const mappedReports: DashboardReport[] = data.reports.map(
+          (r: ApiReport) => ({
+            id: r._id,
+            date: new Date(r.createdAt).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }),
+            menu: r.title,
+            totalStudents: r.totalStudents,
+            distributed: r.mealsDistributed,
+            status: r.status,
+            notes: r.description,
+          })
+        );
+        setReports(mappedReports);
       }
-    };
-    fetchData();
-  }, []);
+
+      if (typeof data.presentCount === "number") {
+        setPresentCount(data.presentCount);
+      } else if (data.students) {
+        const present = data.students.filter(
+          (s: any) => s.status === "Hadir"
+        ).length;
+        setPresentCount(present);
+      }
+    }
+  }, [data]);
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/sekolah");
+  //       const data = await res.json();
+  //       if (data.stats) setStats(data.stats);
+  //       if (data.profile) setSchoolProfile(data.profile);
+  //       if (data.reports) {
+  //         const mappedReports: DashboardReport[] = data.reports.map(
+  //           (r: ApiReport) => ({
+  //             id: r._id,
+  //             date: new Date(r.createdAt).toLocaleDateString("id-ID", {
+  //               day: "numeric",
+  //               month: "long",
+  //               year: "numeric",
+  //             }),
+  //             menu: r.title,
+  //             totalStudents: r.totalStudents,
+  //             distributed: r.mealsDistributed,
+  //             status: r.status,
+  //             notes: r.description,
+  //           })
+  //         );
+  //         setReports(mappedReports);
+  //       }
+
+  //       if (typeof data.presentCount === "number") {
+  //         setPresentCount(data.presentCount);
+  //       } else if (data.students) {
+  //         const present = data.students.filter(
+  //           (s: any) => s.status === "Hadir"
+  //         ).length;
+  //         setPresentCount(present);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch school dashboard data", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
+
+  if (loading)
+    return (
+      <div className="p-8 text-center">Memuat data sekolah dashboard...</div>
+    );
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -424,8 +466,9 @@ const DashboardHome = () => {
   );
 };
 
-const DataMuridPage = () => {
+const DataMuridPage = ({ students: initialStudents }: { students: any[] }) => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -458,27 +501,43 @@ const DataMuridPage = () => {
   };
 
   useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const res = await fetch("/api/dashboard/sekolah");
-        const data = await res.json();
-        if (data.students) {
-          const mappedStudents = data.students.map((s: ApiStudent) => ({
-            id: s._id,
-            name: s.fullName,
-            nisn: s.username,
-            class: s.class || "X-A",
-            status: s.status || "-",
-            gender: s.gender || "L",
-          }));
-          setStudents(mappedStudents);
-        }
-      } catch (error) {
-        console.error("Failed to fetch students", error);
-      }
-    };
-    fetchStudents();
-  }, []);
+    if (initialStudents) {
+      const mappedStudents = initialStudents.map((s: ApiStudent) => ({
+        id: s._id,
+        name: s.fullName,
+        nisn: s.username,
+        class: s.class || "X-A",
+        status: s.status || "-",
+        gender: s.gender || "L",
+      }));
+      setStudents(mappedStudents);
+    }
+  }, [initialStudents]);
+
+  // useEffect(() => {
+  //   const fetchStudents = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/sekolah");
+  //       const data = await res.json();
+  //       if (data.students) {
+  //         const mappedStudents = data.students.map((s: ApiStudent) => ({
+  //           id: s._id,
+  //           name: s.fullName,
+  //           nisn: s.username,
+  //           class: s.class || "X-A",
+  //           status: s.status || "-",
+  //           gender: s.gender || "L",
+  //         }));
+  //         setStudents(mappedStudents);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch students", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchStudents();
+  // }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus siswa ini?")) return;
@@ -521,6 +580,11 @@ const DataMuridPage = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  if (loading)
+    return (
+      <div className="p-8 text-center">Memuat data sekolah dashboard...</div>
+    );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -647,12 +711,12 @@ const DataMuridPage = () => {
                   <td className="px-6 py-4">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${
-                        s.status === "Sudah menerima"
+                        s.status === "Hadir"
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {s.status === "Sudah menerima" && <Check size={10} />}
+                      {s.status === "Hadir" && <Check size={10} />}
                       {s.status}
                     </span>
                   </td>
@@ -707,38 +771,63 @@ const DataMuridPage = () => {
   );
 };
 
-const LaporanPage = () => {
+const LaporanPage = ({ data }: { data: any }) => {
   const [filterDate, setFilterDate] = useState("November 2025");
   const [reports, setReports] = useState<DashboardReport[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const res = await fetch("/api/dashboard/sekolah");
-        const data = await res.json();
-        const sourceReports = data.dailyReports || data.reports || [];
+    if (data) {
+      const sourceReports = data.dailyReports || data.reports || [];
 
-        const mapped = sourceReports.map((r: ApiReport) => ({
-          id: r._id,
-          date: new Date(r.createdAt).toLocaleDateString("id-ID", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          }),
-          rawDate: new Date(r.createdAt),
-          menu: r.title || "Menu Standar",
-          totalStudents: r.totalStudents || 0,
-          distributed: r.mealsDistributed || 0,
-          status: r.status,
-          notes: r.description,
-        }));
-        setReports(mapped);
-      } catch (error) {
-        console.error("Failed to fetch reports", error);
-      }
-    };
-    fetchReports();
-  }, []);
+      const mapped = sourceReports.map((r: ApiReport) => ({
+        id: r._id,
+        date: new Date(r.createdAt).toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }),
+        rawDate: new Date(r.createdAt),
+        menu: r.title || "Menu Standar",
+        totalStudents: r.totalStudents || 0,
+        distributed: r.mealsDistributed || 0,
+        status: r.status,
+        notes: r.description,
+      }));
+      setReports(mapped);
+    }
+  }, [data]);
+
+  // useEffect(() => {
+  //   const fetchReports = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/sekolah");
+  //       const data = await res.json();
+  //       const sourceReports = data.dailyReports || data.reports || [];
+
+  //       const mapped = sourceReports.map((r: ApiReport) => ({
+  //         id: r._id,
+  //         date: new Date(r.createdAt).toLocaleDateString("id-ID", {
+  //           day: "2-digit",
+  //           month: "short",
+  //           year: "numeric",
+  //         }),
+  //         rawDate: new Date(r.createdAt),
+  //         menu: r.title || "Menu Standar",
+  //         totalStudents: r.totalStudents || 0,
+  //         distributed: r.mealsDistributed || 0,
+  //         status: r.status,
+  //         notes: r.description,
+  //       }));
+  //       setReports(mapped);
+  //     } catch (error) {
+  //       console.error("Failed to fetch reports", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchReports();
+  // }, []);
 
   const filteredReports = reports.filter((r: any) => {
     const reportDate = r.rawDate;
@@ -782,6 +871,11 @@ const LaporanPage = () => {
         return null;
     }
   };
+
+  if (loading)
+    return (
+      <div className="p-8 text-center">Memuat data sekolah dashboard...</div>
+    );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -1099,7 +1193,7 @@ const LaporanSiswaPage = () => {
                     colSpan={6}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    Memuat data...
+                    Memuat data sekolah dashboard...
                   </td>
                 </tr>
               ) : reports.length === 0 ? (
@@ -1215,12 +1309,6 @@ const NotifikasiPage = () => {
             Update terbaru dari pusat MBG dan dinas terkait.
           </p>
         </div>
-        {/* <button
-          onClick={markAllRead}
-          className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-1"
-        >
-          <Check size={14} /> Tandai semua sudah dibaca
-        </button> */}
       </div>
 
       <div className="space-y-3">
@@ -1296,7 +1384,10 @@ const PengaturanPage = () => {
     fetchProfile();
   }, []);
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="p-8 text-center">Memuat data sekolah dashboard...</div>
+    );
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl">
@@ -1319,19 +1410,6 @@ const PengaturanPage = () => {
           >
             <School size={18} /> Profil Sekolah
           </button>
-          {/* <button
-            onClick={() => setActiveTab("security")}
-            className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 transition-colors ${
-              activeTab === "security"
-                ? "bg-blue-50 text-blue-700"
-                : "bg-white text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            <Lock size={18} /> Keamanan & Akun
-          </button>
-          <button className="w-full text-left px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 text-gray-600 hover:bg-gray-50 transition-colors">
-            <Bell size={18} /> Preferensi Notifikasi
-          </button> */}
         </div>
 
         <div className="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8">
@@ -1349,9 +1427,6 @@ const PengaturanPage = () => {
                     NPSN: {profile?.npsn || "-"}
                   </p>
                 </div>
-                {/* <button className="ml-auto text-sm text-blue-600 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50">
-                  Ubah Logo
-                </button> */}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1494,7 +1569,9 @@ const LaporSesuatuPage = () => {
           <h3 className="text-lg font-bold text-blue-900">Tiket Saya</h3>
         </div>
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Memuat tiket...</div>
+          <div className="p-8 text-center text-gray-500">
+            Memuat data sekolah dashboard...
+          </div>
         ) : myTickets.length > 0 ? (
           <div className="divide-y divide-gray-100">
             {myTickets.map((ticket) => (
@@ -1550,6 +1627,24 @@ export default function SekolahDashboardPage() {
   const router = useRouter();
   const { tab } = router.query;
   const activeTab = (Array.isArray(tab) ? tab[0] : tab) || "dashboard";
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/dashboard/sekolah");
+        const data = await res.json();
+        setDashboardData(data);
+      } catch (error) {
+        console.error("Failed to fetch school dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const getActiveMenu = (): SidebarMenuKey => {
     if (activeTab === "murid") return "murid";
@@ -1564,11 +1659,11 @@ export default function SekolahDashboardPage() {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <DashboardHome />;
+        return <DashboardHome data={dashboardData} loading={loading} />;
       case "murid":
-        return <DataMuridPage />;
+        return <DataMuridPage students={dashboardData?.students || []} />;
       case "laporan":
-        return <LaporanPage />;
+        return <LaporanPage data={dashboardData} />;
       case "laporan-siswa":
         return <LaporanSiswaPage />;
       case "lapor":
@@ -1578,7 +1673,7 @@ export default function SekolahDashboardPage() {
       case "pengaturan":
         return <PengaturanPage />;
       default:
-        return <DashboardHome />;
+        return <DashboardHome data={dashboardData} loading={loading} />;
     }
   };
 

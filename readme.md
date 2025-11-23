@@ -2,7 +2,6 @@
 
 Website manajemen laporan MBG untuk lomba **JYCC (JATIM YOUTH CODEPRENEUR CHALLENGE)**.
 
-
 ## Cara Menjalankan
 
 ### 1. Clone repo
@@ -33,16 +32,18 @@ SESSION_TTL_SECONDS=86400 # 1 day
 Penjelasan tiap key di `.env`
 (`*` = wajib diganti):
 
-* `MONGODB_URI`*
+- `MONGODB_URI`\*
   Isi dengan link database MongoDB kamu.
   Bisa buat database di:
   [https://www.mongodb.com/cloud/atlas/register](https://www.mongodb.com/cloud/atlas/register)
 
-* `SESSION_SECRET`*
+- `SESSION_SECRET`\*
   Kunci rahasia untuk session (harus diganti, jangan pakai contoh).
 
-* `SESSION_TTL_SECONDS`
+- `SESSION_TTL_SECONDS`
   Lama session sebelum hangus (86400 detik = 1 hari).
+- `GEMINI_API_KEY`
+  API key untuk Gemini (harus diganti).
 
 ### 4. Isi database dengan data test
 

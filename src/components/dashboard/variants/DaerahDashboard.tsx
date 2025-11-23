@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { MbgSidebarLayout } from "@/components/layouts/MbgSidebarLayout";
 
@@ -57,8 +58,6 @@ import {
   EyeOff,
 } from "lucide-react";
 
-// Parse (lagi)
-
 const formatThousandsShort = (value: number) => {
   const abs = Math.abs(value);
   if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -80,33 +79,23 @@ const formatRelativeTime = (dateInput: string | number | Date) => {
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
-//  pages sidebar
+const DistributionPage = ({ data }: { data: any[] }) => {
+  // const [data, setData] = useState<any[]>([]);
 
-const DistributionPage = () => {
-  const [data, setData] = useState<any[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/dashboard/daerah");
-        const json = await res.json();
-        if (json.recentReports) {
-          const mappedData = json.recentReports.map((r: any, idx: number) => ({
-            id: idx + 1,
-            school: r.schoolId || "Sekolah",
-            menu: "Menu Standar",
-            qty: 450,
-            time: new Date(r.createdAt).toLocaleTimeString(),
-            status: r.status === "approved" ? "delivered" : "pending",
-          }));
-          setData(mappedData);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      }
-    };
-    fetchData();
-  }, []);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/daerah");
+  //       const json = await res.json();
+  //       if (json.distribution) {
+  //         setData(json.distribution);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch dashboard data", error);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -114,9 +103,9 @@ const DistributionPage = () => {
         <h2 className="text-2xl font-bold text-blue-900">
           Monitor Distribusi Makanan
         </h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
+        {/* <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
           <Truck size={16} /> Lacak Armada
-        </button>
+        </button> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -197,29 +186,29 @@ const DistributionPage = () => {
   );
 };
 
-const SchoolProgramPage = () => {
+const SchoolProgramPage = ({ schools }: { schools: any[] }) => {
   const router = useRouter();
-  const [schools, setSchools] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [schools, setSchools] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const res = await fetch("/api/dashboard/daerah");
-        const data = await res.json();
-        if (data.schools) {
-          setSchools(data.schools);
-        }
-      } catch (error) {
-        console.error("Failed to fetch schools", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSchools();
-  }, []);
+  // useEffect(() => {
+  //   const fetchSchools = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/daerah");
+  //       const data = await res.json();
+  //       if (data.schools) {
+  //         setSchools(data.schools);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch schools", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchSchools();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -241,7 +230,7 @@ const SchoolProgramPage = () => {
             key={school.id}
             className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all group"
           >
-            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
+            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4 mx-auto group-hover:scale-110 transition-transform">
               <School size={28} />
             </div>
             <div className="text-center mb-4">
@@ -257,14 +246,14 @@ const SchoolProgramPage = () => {
                 </span>
               </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center mb-4">
+            {/* <div className="bg-gray-50 p-3 rounded-lg flex justify-between items-center mb-4">
               <span className="text-xs font-medium text-gray-500">
                 Skor Kepatuhan
               </span>
               <span className="text-sm font-bold text-green-600">
                 {school.score}%
               </span>
-            </div>
+            </div> */}
             <button
               onClick={() => {
                 setSelectedSchool(school);
@@ -278,65 +267,66 @@ const SchoolProgramPage = () => {
         ))}
       </div>
 
-      {/* Detail Modal */}
-      {showModal && selectedSchool && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl transform transition-all scale-100 overflow-hidden">
-            <div className="bg-blue-600 p-6 flex justify-between items-center text-white">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <School className="text-blue-200" /> Detail Sekolah
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-blue-700 rounded-full transition-colors"
-              >
-                <XCircle size={24} />
-              </button>
-            </div>
-            <div className="p-6 space-y-6">
-              <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
-                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
-                  <School size={32} />
-                </div>
-                <div>
-                  <h4 className="text-xl font-bold text-gray-900">
-                    {selectedSchool.name}
-                  </h4>
-                  <p className="text-gray-500 text-sm">
-                    NPSN: {selectedSchool.npsn}
-                  </p>
-                </div>
+      {showModal &&
+        selectedSchool &&
+        createPortal(
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl transform transition-all scale-100 overflow-hidden">
+              <div className="bg-blue-600 p-6 flex justify-between items-center text-white">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <School className="text-blue-200" /> Detail Sekolah
+                </h3>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-1 hover:bg-blue-700 rounded-full transition-colors"
+                >
+                  <XCircle size={24} />
+                </button>
               </div>
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
+                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
+                    <School size={32} />
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-900">
+                      {selectedSchool.name}
+                    </h4>
+                    <p className="text-gray-500 text-sm">
+                      NPSN: {selectedSchool.npsn}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-xs text-gray-500 uppercase font-bold mb-1">
-                    PIC / Kepala Sekolah
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                      PIC / Kepala Sekolah
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                      <User size={16} className="text-blue-500" />
+                      {selectedSchool.pic}
+                    </div>
                   </div>
-                  <div className="font-semibold text-gray-800 flex items-center gap-2">
-                    <User size={16} className="text-blue-500" />
-                    {selectedSchool.pic}
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                      Jumlah Siswa
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                      <Users size={16} className="text-orange-500" />
+                      {selectedSchool.students} Siswa
+                    </div>
                   </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-xs text-gray-500 uppercase font-bold mb-1">
-                    Jumlah Siswa
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="text-xs text-gray-500 uppercase font-bold mb-1">
+                      Wilayah
+                    </div>
+                    <div className="font-semibold text-gray-800 flex items-center gap-2">
+                      <MapPin size={16} className="text-red-500" />
+                      {selectedSchool.district}
+                    </div>
                   </div>
-                  <div className="font-semibold text-gray-800 flex items-center gap-2">
-                    <Users size={16} className="text-orange-500" />
-                    {selectedSchool.students} Siswa
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="text-xs text-gray-500 uppercase font-bold mb-1">
-                    Wilayah
-                  </div>
-                  <div className="font-semibold text-gray-800 flex items-center gap-2">
-                    <MapPin size={16} className="text-red-500" />
-                    {selectedSchool.district}
-                  </div>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
+                  {/* <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="text-xs text-gray-500 uppercase font-bold mb-1">
                     Skor Kepatuhan
                   </div>
@@ -344,66 +334,77 @@ const SchoolProgramPage = () => {
                     <CheckCircle size={16} />
                     {selectedSchool.score}%
                   </div>
+                </div> */}
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <div className="text-sm text-gray-500 font-medium">
-                  Kontak Email
-                </div>
-                <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg text-gray-700 bg-white">
-                  <div className="bg-blue-100 p-1.5 rounded-md text-blue-600">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="20" height="16" x="2" y="4" rx="2" />
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                    </svg>
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-500 font-medium">
+                    Kontak Email
                   </div>
-                  {selectedSchool.email || "Tidak ada email"}
+                  <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg text-gray-700 bg-white">
+                    <div className="bg-blue-100 p-1.5 rounded-md text-blue-600">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                    </div>
+                    {selectedSchool.email || "Tidak ada email"}
+                  </div>
                 </div>
               </div>
+              <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
-            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
 
-const QualityReportPage = () => {
-  const [schools, setSchools] = useState<any[]>([]);
+const QualityReportPage = ({
+  schools,
+  weeklyScores,
+}: {
+  schools: any[];
+  weeklyScores: any[];
+}) => {
+  // const [schools, setSchools] = useState<any[]>([]);
+  // const [weeklyScores, setWeeklyScores] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const res = await fetch("/api/dashboard/daerah");
-        const data = await res.json();
-        if (data.schools) {
-          setSchools(data.schools);
-        }
-      } catch (error) {
-        console.error("Failed to fetch schools", error);
-      }
-    };
-    fetchSchools();
-  }, []);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/daerah");
+  //       const data = await res.json();
+  //       if (data.schools) {
+  //         setSchools(data.schools);
+  //       }
+  //       if (data.stats && data.stats.weeklyScores) {
+  //         setWeeklyScores(data.stats.weeklyScores);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch data", error);
+  //     }
+  //   };
+  //   fetchData();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -479,16 +480,9 @@ const QualityReportPage = () => {
               Tren Kualitas Bulan Ini
             </h3>
           </div>
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={[
-                  { name: "W1", score: 8.5 },
-                  { name: "W2", score: 8.2 },
-                  { name: "W3", score: 8.8 },
-                  { name: "W4", score: 9.0 },
-                ]}
-              >
+              <AreaChart data={weeklyScores}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 10]} tick={{ fontSize: 12 }} />
@@ -508,33 +502,32 @@ const QualityReportPage = () => {
   );
 };
 
-const VerificationPage = () => {
-  const [verifications, setVerifications] = useState([
-    {
-      id: 1,
-      title: "Pengajuan Dana Tambahan",
-      user: "SPPG Banyuwangi",
-      amount: "Rp 15.000.000",
-      date: "06 Nov 2025",
-      status: "pending",
-    },
-    {
-      id: 2,
-      title: "Perubahan Menu Vendor",
-      user: "SPPG Kediri",
-      amount: "-",
-      date: "05 Nov 2025",
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Klaim Kerusakan Alat",
-      user: "SPPG Jember",
-      amount: "Rp 2.500.000",
-      date: "04 Nov 2025",
-      status: "approved",
-    },
-  ]);
+const VerificationPage = ({
+  verifications: initialVerifications,
+}: {
+  verifications: any[];
+}) => {
+  const [verifications, setVerifications] =
+    useState<any[]>(initialVerifications);
+
+  useEffect(() => {
+    setVerifications(initialVerifications);
+  }, [initialVerifications]);
+
+  // useEffect(() => {
+  //   const fetchVerifications = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/daerah");
+  //       const data = await res.json();
+  //       if (data.verifications) {
+  //         setVerifications(data.verifications);
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch verifications", error);
+  //     }
+  //   };
+  //   fetchVerifications();
+  // }, []);
 
   const handleAction = (id: number, status: string) => {
     setVerifications((prev) =>
@@ -612,45 +605,45 @@ const VerificationPage = () => {
   );
 };
 
-const AlertsPage = () => {
+const AlertsPage = ({ alerts }: { alerts: any[] }) => {
   const router = useRouter();
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  // const [alerts, setAlerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      try {
-        const res = await fetch("/api/dashboard/daerah");
-        const data = await res.json();
-        if (data.alerts) {
-          setAlerts(data.alerts);
-        } else if (data.recentReports) {
-          setAlerts(
-            data.recentReports.map((r: any, idx: number) => ({
-              id: r._id || idx + 1,
-              ticketId: r._id ?? null,
-              type:
-                r.priority === "high"
-                  ? "danger"
-                  : r.priority === "medium"
-                  ? "warning"
-                  : "info",
-              title: r.title ?? "Laporan Wilayah",
-              location: r.schoolId || r.district || "Tidak diketahui",
-              time: r.createdAt,
-              desc: r.description ?? "Laporan baru masuk.",
-            }))
-          );
-        }
-      } catch (error) {
-        console.error("Failed to fetch alerts", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchAlerts = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/daerah");
+  //       const data = await res.json();
+  //       if (data.alerts) {
+  //         setAlerts(data.alerts);
+  //       } else if (data.recentReports) {
+  //         setAlerts(
+  //           data.recentReports.map((r: any, idx: number) => ({
+  //             id: r._id || idx + 1,
+  //             ticketId: r._id ?? null,
+  //             type:
+  //               r.priority === "high"
+  //                 ? "danger"
+  //                 : r.priority === "medium"
+  //                 ? "warning"
+  //                 : "info",
+  //             title: r.title ?? "Laporan Wilayah",
+  //             location: r.schoolId || r.district || "Tidak diketahui",
+  //             time: r.createdAt,
+  //             desc: r.description ?? "Laporan baru masuk.",
+  //           }))
+  //         );
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to fetch alerts", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchAlerts();
-  }, []);
+  //   fetchAlerts();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -660,7 +653,7 @@ const AlertsPage = () => {
       <div className="space-y-4">
         {loading && (
           <div className="bg-white p-8 rounded-xl text-center text-gray-500 border border-gray-100">
-            Memuat peringatan terbaru...
+            Memuat data daerah dashboard...
           </div>
         )}
         {!loading && alerts.length === 0 && (
@@ -726,12 +719,32 @@ const AlertsPage = () => {
   );
 };
 
-const StatsPage = () => {
-  const pieData = [
-    { name: "Terserap", value: 85 },
-    { name: "Sisa", value: 10 },
-    { name: "Rusak/Hilang", value: 5 },
-  ];
+const StatsPage = ({
+  demographics,
+  budgetAbsorption,
+}: {
+  demographics: any[];
+  budgetAbsorption: any[];
+}) => {
+  // const [demographics, setDemographics] = useState<any[]>([]);
+  // const [budgetAbsorption, setBudgetAbsorption] = useState<any[]>([]);
+  // const [loading, setLoading] = useState(true);
+
+  // useEffect(() => {
+  //   const fetchStats = async () => {
+  //     try {
+  //       const res = await fetch("/api/dashboard/daerah");
+  //       const data = await res.json();
+  //       if (data.demographics) setDemographics(data.demographics);
+  //       if (data.budgetAbsorption) setBudgetAbsorption(data.budgetAbsorption);
+  //     } catch (error) {
+  //       console.error("Failed to fetch stats", error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchStats();
+  // }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -739,7 +752,7 @@ const StatsPage = () => {
         Statistik Daerah Mendalam
       </h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        {/* <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-blue-900">
               Efisiensi Penyerapan Anggaran
@@ -749,7 +762,7 @@ const StatsPage = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={pieData}
+                  data={budgetAbsorption}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -758,7 +771,7 @@ const StatsPage = () => {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {pieData.map((entry, index) => (
+                  {budgetAbsorption.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
@@ -770,7 +783,7 @@ const StatsPage = () => {
             </ResponsiveContainer>
           </div>
           <div className="flex justify-center gap-4 mt-4 flex-wrap">
-            {pieData.map((entry, index) => (
+            {budgetAbsorption.map((entry, index) => (
               <div key={index} className="flex items-center gap-2 text-sm">
                 <span
                   className="w-3 h-3 rounded-full"
@@ -782,7 +795,7 @@ const StatsPage = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-blue-900">
@@ -790,46 +803,22 @@ const StatsPage = () => {
             </h3>
           </div>
           <div className="space-y-6">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-gray-700">
-                  SD (Sekolah Dasar)
-                </span>
-                <span className="font-bold text-blue-900">65%</span>
+            {demographics.map((item, idx) => (
+              <div key={idx}>
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="font-medium text-gray-700">{item.name}</span>
+                  <span className="font-bold text-blue-900">{item.value}%</span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2.5">
+                  <div
+                    className={`${
+                      item.color || "bg-blue-600"
+                    } h-2.5 rounded-full`}
+                    style={{ width: `${item.value}%` }}
+                  ></div>
+                </div>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-2.5">
-                <div
-                  className="bg-blue-600 h-2.5 rounded-full"
-                  style={{ width: "65%" }}
-                ></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-gray-700">SMP</span>
-                <span className="font-bold text-blue-900">25%</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-2.5">
-                <div
-                  className="bg-blue-400 h-2.5 rounded-full"
-                  style={{ width: "25%" }}
-                ></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-medium text-gray-700">
-                  Ibu Hamil / Balita
-                </span>
-                <span className="font-bold text-blue-900">10%</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-2.5">
-                <div
-                  className="bg-green-500 h-2.5 rounded-full"
-                  style={{ width: "10%" }}
-                ></div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -837,14 +826,21 @@ const StatsPage = () => {
   );
 };
 
-const ArchivePage = () => {
-  const folders = [
-    "Laporan Januari 2025",
-    "Laporan Februari 2025",
-    "Kontrak Vendor",
-    "Data Siswa 2024/2025",
-    "Dokumentasi Kegiatan",
-  ];
+const ArchivePage = (): React.ReactElement => {
+  const [folders, setFolders] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const res = await fetch("/api/dashboard/daerah");
+        const data = await res.json();
+        if (data.archiveFolders) setFolders(data.archiveFolders);
+      } catch (error) {
+        console.error("Failed to fetch archive folders", error);
+      }
+    };
+    fetchFolders();
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -1308,51 +1304,60 @@ const AddUserPage = () => {
   );
 };
 
-const DashboardHome = () => {
+const DashboardHome = ({
+  data,
+  loading,
+  error,
+}: {
+  data: any;
+  loading: boolean;
+  error: string | null;
+}): React.ReactElement => {
   const router = useRouter();
   const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [distributionStats, setDistributionStats] = useState<any[]>([]);
+  const [nutritionStats, setNutritionStats] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/dashboard/daerah");
-        const data = await res.json();
-        if (data.stats) {
-          setStats(data.stats);
-        }
-        if (data.alerts) {
-          setAlerts(data.alerts);
-        }
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      } finally {
-        setLoading(false);
+    if (data) {
+      if (data.stats) {
+        setStats(data.stats);
       }
-    };
-    fetchData();
-  }, []);
+      if (data.alerts) {
+        setAlerts(data.alerts);
+      }
+      if (data.distributionStats) {
+        setDistributionStats(data.distributionStats);
+      }
+      if (data.nutritionStats) {
+        setNutritionStats(data.nutritionStats);
+      }
+    }
+  }, [data]);
 
   const fallbackDistributionData = [
-    { name: "Malang", value: 250000 },
-    { name: "Surabaya", value: 220000 },
-    { name: "Jember", value: 180000 },
-    { name: "Kediri", value: 150000 },
-    { name: "Jombang", value: 100000 },
+    { name: "Malang", value: 0 },
+    { name: "Surabaya", value: 0 },
+    { name: "Jember", value: 0 },
+    { name: "Kediri", value: 0 },
+    { name: "Jombang", value: 0 },
   ];
 
   const fallbackNutritionData = [
-    { name: "Jan", value: 85 },
-    { name: "Feb", value: 87 },
-    { name: "Mar", value: 90 },
-    { name: "Apr", value: 88 },
-    { name: "Mei", value: 82 },
-    { name: "Jun", value: 79 },
+    { name: "Jan", value: 0 },
+    { name: "Feb", value: 0 },
+    { name: "Mar", value: 0 },
+    { name: "Apr", value: 0 },
+    { name: "Mei", value: 0 },
+    { name: "Jun", value: 0 },
   ];
 
-  const distributionData = stats?.distributionData ?? fallbackDistributionData;
-  const nutritionData = stats?.nutritionData ?? fallbackNutritionData;
+  const distributionData =
+    distributionStats.length > 0 ? distributionStats : fallbackDistributionData;
+  const nutritionData =
+    nutritionStats.length > 0 ? nutritionStats : fallbackNutritionData;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -1476,7 +1481,7 @@ const DashboardHome = () => {
               Distribusi per Kota
             </h3>
           </div>
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={distributionData}>
                 <CartesianGrid
@@ -1507,7 +1512,7 @@ const DashboardHome = () => {
               Kualitas Gizi Wilayah
             </h3>
           </div>
-          <div className="h-64">
+          <div className="h-64 w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={nutritionData}>
                 <CartesianGrid
@@ -1551,7 +1556,7 @@ const DashboardHome = () => {
 
         {loading && (
           <div className="bg-white p-6 rounded-xl text-center text-gray-500 border border-gray-100">
-            Memuat peringatan terbaru...
+            Memuat data daerah dashboard...
           </div>
         )}
         {!loading &&
@@ -1597,50 +1602,56 @@ const DashboardHome = () => {
   );
 };
 
-//  main dash
-
 const DaerahDashboard = () => {
   const router = useRouter();
   const { tab } = router.query;
   const activeTab = (Array.isArray(tab) ? tab[0] : tab) || "dashboard";
   const [alertCount, setAlertCount] = useState(0);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAlertCount = async () => {
+    const fetchAllData = async () => {
       try {
+        setLoading(true);
         const res = await fetch("/api/dashboard/daerah");
         const data = await res.json();
+        setDashboardData(data);
+
+        // Calculate alert count
+        let count = 0;
         const alertsLen = Array.isArray(data.alerts) ? data.alerts.length : 0;
         if (alertsLen > 0) {
-          setAlertCount(alertsLen);
-          return;
+          count = alertsLen;
+        } else {
+          const stats = data.stats || {};
+          if (
+            typeof stats.pendingReports === "number" &&
+            stats.pendingReports > 0
+          ) {
+            count = stats.pendingReports;
+          } else if (
+            typeof stats.reportedIssues === "number" &&
+            stats.reportedIssues > 0
+          ) {
+            count = stats.reportedIssues;
+          } else if (
+            Array.isArray(data.recentReports) &&
+            data.recentReports.length > 0
+          ) {
+            count = data.recentReports.length;
+          }
         }
-        const stats = data.stats || {};
-        if (
-          typeof stats.pendingReports === "number" &&
-          stats.pendingReports > 0
-        ) {
-          setAlertCount(stats.pendingReports);
-          return;
-        }
-        if (
-          typeof stats.reportedIssues === "number" &&
-          stats.reportedIssues > 0
-        ) {
-          setAlertCount(stats.reportedIssues);
-          return;
-        }
-        if (
-          Array.isArray(data.recentReports) &&
-          data.recentReports.length > 0
-        ) {
-          setAlertCount(data.recentReports.length);
-        }
+        setAlertCount(count);
       } catch (error) {
-        console.error("Failed to fetch alert count", error);
+        console.error("Failed to fetch dashboard data", error);
+        setError("Gagal memuat data dashboard.");
+      } finally {
+        setLoading(false);
       }
     };
-    void fetchAlertCount();
+    fetchAllData();
   }, []);
 
   const getActiveMenu = () => {
@@ -1673,17 +1684,28 @@ const DaerahDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <DashboardHome />;
+        return (
+          <DashboardHome data={dashboardData} loading={loading} error={error} />
+        );
       case "distribution":
-        return <DistributionPage />;
+        return <DistributionPage data={dashboardData?.distribution || []} />;
       case "schools":
-        return <SchoolProgramPage />;
+        return <SchoolProgramPage schools={dashboardData?.schools || []} />;
       case "quality":
-        return <QualityReportPage />;
+        return (
+          <QualityReportPage
+            schools={dashboardData?.schools || []}
+            weeklyScores={dashboardData?.stats?.weeklyScores || []}
+          />
+        );
       case "verification":
-        return <VerificationPage />;
+        return (
+          <VerificationPage
+            verifications={dashboardData?.verifications || []}
+          />
+        );
       case "alerts":
-        return <AlertsPage />;
+        return <AlertsPage alerts={dashboardData?.alerts || []} />;
       case "reports":
         return (
           <div className="space-y-6 animate-fade-in">
@@ -1696,13 +1718,20 @@ const DaerahDashboard = () => {
           </div>
         );
       case "stats":
-        return <StatsPage />;
+        return (
+          <StatsPage
+            demographics={dashboardData?.demographics || []}
+            budgetAbsorption={dashboardData?.budgetAbsorption || []}
+          />
+        );
       case "archive":
         return <ArchivePage />;
       case "addUser":
         return <AddUserPage />;
       default:
-        return <DashboardHome />;
+        return (
+          <DashboardHome data={dashboardData} loading={loading} error={error} />
+        );
     }
   };
 
@@ -1722,9 +1751,6 @@ const DaerahDashboard = () => {
 
 export default DaerahDashboard;
 
-{
-  /* Styles from tka.tsx */
-}
 <style jsx global>{`
   @keyframes fadeSlideUp {
     from {

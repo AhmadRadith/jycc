@@ -82,6 +82,9 @@ export default async function handler(
     };
   }
 
+  const FoodItem = (await import("@/models/FoodItem")).default;
+  const foodItems = await FoodItem.find({}).sort({ name: 1 });
+
   res.status(200).json({
     studentId: currentStudent?._id,
     attendanceDone,
@@ -92,5 +95,6 @@ export default async function handler(
       province: schoolProfile?.district || "Jawa Timur",
     },
     schedule: "12.00 - 13.00 WIB",
+    foodItems,
   });
 }

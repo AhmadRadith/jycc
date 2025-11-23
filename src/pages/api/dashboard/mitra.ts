@@ -5,6 +5,8 @@ import Statistic from "@/models/Statistic";
 import FoodItem from "@/models/FoodItem";
 import SchoolRequest from "@/models/SchoolRequest";
 import { MenuSchedule } from "@/models/MenuSchedule";
+import Polling from "@/models/Polling";
+import { User } from "@/models/User";
 
 export default async function handler(
   req: NextApiRequest,
@@ -29,6 +31,12 @@ export default async function handler(
           mitraId: mitraName,
         });
         return res.status(201).json({ ok: true, food: newFood });
+      }
+
+      if (action === "delete_food") {
+        const { id } = req.body;
+        await FoodItem.findByIdAndDelete(id);
+        return res.status(200).json({ ok: true });
       }
 
       if (action === "assign_menu") {
@@ -60,43 +68,6 @@ export default async function handler(
     requestDate: 1,
   });
 
-  if (schoolRequests.length === 0) {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const seedRequests = [
-      {
-        schoolName: "SDN 1 Banyuwangi",
-        menuName: "Nasi Goreng Spesial",
-        quantity: 450,
-        requestDate: today,
-        status: "pending",
-        mitraId: mitraName,
-      },
-      {
-        schoolName: "SMPN 2 Genteng",
-        menuName: "Ayam Bakar Madu",
-        quantity: 320,
-        requestDate: today,
-        status: "approved",
-        mitraId: mitraName,
-      },
-      {
-        schoolName: "SMA 1 Glagah",
-        menuName: "Soto Ayam",
-        quantity: 500,
-        requestDate: tomorrow,
-        status: "pending",
-        mitraId: mitraName,
-      },
-    ];
-    await SchoolRequest.insertMany(seedRequests);
-    schoolRequests = await SchoolRequest.find({ mitraId: mitraName }).sort({
-      requestDate: 1,
-    });
-  }
-
   const foodItems = await FoodItem.find({ mitraId: mitraName }).sort({
     createdAt: -1,
   });
@@ -119,7 +90,55 @@ export default async function handler(
     pendingIssues: assignedReports.filter(
       (r: any) => r.status === "pending" || r.status === "escalated"
     ).length,
+    weeklyScores: stats.weeklyScores || [
+      { name: "W1", score: 8.5 },
+      { name: "W2", score: 8.2 },
+      { name: "W3", score: 8.8 },
+      { name: "W4", score: 9.0 },
+    ],
   };
+
+  const pollings = await Polling.find({
+    suggestion: { $exists: true, $ne: "" },
+  })
+    .sort({ createdAt: -1 })
+    .populate("studentId", "fullName class");
+
+  const suggestionsMap = new Map<string, any[]>();
+  const schoolIds = new Set<string>();
+
+  pollings.forEach((p) => {
+    if (!suggestionsMap.has(p.schoolId)) {
+      suggestionsMap.set(p.schoolId, []);
+      schoolIds.add(p.schoolId);
+    }
+    suggestionsMap.get(p.schoolId)?.push({
+      id: p._id,
+      studentName: p.studentId?.fullName || "Siswa",
+      studentClass: p.studentId?.class || "-",
+      suggestion: p.suggestion,
+      date: p.createdAt,
+      menuChoice: p.menuChoice,
+    });
+  });
+
+  const schools = await User.find({
+    schoolId: { $in: Array.from(schoolIds) },
+    role: "sekolah",
+  }).select("schoolId fullName");
+
+  const schoolNameMap = new Map<string, string>();
+  schools.forEach((s) => {
+    if (s.schoolId) schoolNameMap.set(s.schoolId, s.fullName);
+  });
+
+  const suggestionsBySchool = Array.from(suggestionsMap.entries()).map(
+    ([schoolId, items]) => ({
+      schoolId,
+      schoolName: schoolNameMap.get(schoolId) || `Sekolah ${schoolId}`,
+      items,
+    })
+  );
 
   res.status(200).json({
     stats: finalStats,
@@ -127,5 +146,6 @@ export default async function handler(
     requests: schoolRequests,
     foodItems: foodItems,
     menuSchedules: menuSchedules,
+    suggestions: suggestionsBySchool,
   });
 }

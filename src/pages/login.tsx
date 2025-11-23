@@ -149,7 +149,7 @@ export default function MBGsecureLoginPage({
     html, body { 
       width: 100%; 
       height: 100%; 
-      overscroll-behavior: none; /* Prevent initial scrollbar flash on mount */
+      overscroll-behavior: none; 
     }
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -160,9 +160,8 @@ export default function MBGsecureLoginPage({
       justify-content: center; 
       padding: 20px; 
       position: relative; 
-      overflow: hidden; /* Lock viewport to remove flickering scrollbar */
+      overflow: hidden; 
     }
-    /* Fix for Next.js root element to ensure centering works */
     #__next {
       width: 100%;
       height: 100%;
@@ -170,7 +169,6 @@ export default function MBGsecureLoginPage({
       align-items: center;
       justify-content: center;
     }
-    /* Subtle Batik Overlay Pattern on Body */
     body::before { 
       content: ''; 
       position: absolute; 
@@ -195,7 +193,6 @@ export default function MBGsecureLoginPage({
     }
     @keyframes slideIn { from { opacity: 0; transform: translateY(40px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-    /* LEFT PANEL */
     .left-panel { 
       flex: 1; 
       background: linear-gradient(135deg, #0F52BA 0%, #002366 100%); 
@@ -225,11 +222,10 @@ export default function MBGsecureLoginPage({
     @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
     .welcome-text p { color: rgba(247,245,240,0.9); font-size: 16px; line-height: 1.7; font-weight: 300; animation: fadeInLeft 1s ease-out 0.2s both; }
 
-    /* RIGHT PANEL */
     .right-panel { 
       flex: 1; 
       padding: 70px 60px; 
-      background: #fff; /* Pure white for cleaner look */
+      background: #fff;
       display: flex; 
       flex-direction: column; 
       justify-content: center; 
@@ -247,12 +243,12 @@ export default function MBGsecureLoginPage({
       font-size: 14px; 
       cursor: pointer; 
       transition: all 0.2s ease; 
-      appearance: none; /* Remove default arrow */
+      appearance: none; 
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 12px center;
       background-size: 16px;
-      padding-right: 40px; /* Make room for arrow */
+      padding-right: 40px; 
     }
     .locale-switcher select:focus { outline: none; border-color: #0F52BA; box-shadow: 0 0 0 4px rgba(15, 82, 186, 0.1); }
 
@@ -289,17 +285,16 @@ export default function MBGsecureLoginPage({
     .login-button.loading::after { content: ''; position: absolute; width: 20px; height: 20px; top: 50%; left: 50%; margin-left: -10px; margin-top: -10px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* UPDATED SIGNUP LINK STYLING to match image */
     .signup-link { 
       text-align: center; 
       margin-top: 32px; 
-      color: #64748b; /* Slate gray for 'New User?' */
+      color: #64748b; 
       font-size: 15px; 
     }
     .signup-link a { 
       color: #0F52BA; 
       text-decoration: none; 
-      font-weight: 600; /* Bold link */
+      font-weight: 600; 
       margin-left: 4px;
       transition: all 0.2s ease; 
     }
@@ -312,18 +307,18 @@ export default function MBGsecureLoginPage({
 
     @media (max-width: 768px) { 
       html, body {
-        overflow-y: auto; /* Re-enable scroll on small screens */
+        overflow-y: auto; 
       }
       body {
         padding: 0;
-        align-items: flex-start; /* Prevents top cut-off when scrolling up */
+        align-items: flex-start; 
       }
       .container { 
         flex-direction: column; 
         border-radius: 0; 
-        height: auto; /* Allow growth */
-        min-height: 100vh; /* Full screen minimum */
-        overflow-y: visible; /* Use native body scroll */
+        height: auto; 
+        min-height: 100vh; 
+        overflow-y: visible; 
         box-shadow: none;
       } 
       .left-panel { 
@@ -332,7 +327,7 @@ export default function MBGsecureLoginPage({
         flex: 0 0 auto; 
       } 
       .right-panel { 
-        padding: 40px 30px 80px 30px; /* Extra bottom padding prevents cut-off */
+        padding: 40px 30px 80px 30px;
         flex: 1 0 auto; 
         border-radius: 24px 24px 0 0; 
         margin-top: -24px; 

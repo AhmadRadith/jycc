@@ -5,7 +5,7 @@ import { Report } from "@/models/Report";
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: "10mb",
+      sizeLimit: "3mb",
     },
   },
 };
@@ -37,6 +37,7 @@ export default async function handler(
         } else if (schoolName) {
           query.schoolName = schoolName;
         }
+        query.category = { $ne: "Laporan Siswa" };
       } else if (role === "murid") {
         const { userId } = req.query;
         if (userId) {
@@ -45,7 +46,19 @@ export default async function handler(
       } else if (role === "mitra") {
         const { userId } = req.query;
         if (userId) {
-          query.assignedMitra = userId;
+          const User = (await import("@/models/User")).User;
+          const user = await User.findOne({
+            $or: [{ username: userId }, { fullName: userId }],
+          });
+
+          const searchTerms = [userId];
+          if (user && user.fullName) {
+            searchTerms.push(user.fullName);
+          }
+
+          query.assignedMitra = {
+            $in: searchTerms.map((term) => new RegExp(term as string, "i")),
+          };
         }
       } else if (role === "pusat") {
         query.status = { $in: ["escalated", "resolved", "rejected"] };
@@ -53,6 +66,14 @@ export default async function handler(
 
       if (status && status !== "all") {
         query.status = status;
+      }
+
+      const { category, priority } = req.query;
+      if (category && category !== "all") {
+        query.category = category;
+      }
+      if (priority && priority !== "all") {
+        query.priority = priority;
       }
 
       if (search) {

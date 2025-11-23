@@ -14,7 +14,7 @@ const ReportSchema = new Schema({
     default: "medium",
   },
   category: { type: String, required: true },
-  reporterId: { type: String, required: true }, 
+  reporterId: { type: String, required: true },
   reporterRole: { type: String, required: true },
   schoolId: { type: String },
   schoolName: { type: String },
@@ -40,6 +40,7 @@ const ReportSchema = new Schema({
         default: "text",
       },
       attachment: String,
+      attachmentName: String,
       time: { type: Date, default: Date.now },
     },
   ],
@@ -47,13 +48,22 @@ const ReportSchema = new Schema({
     {
       studentName: String,
       summary: String,
-      time: Number, 
+      time: Number,
     },
   ],
   createdAt: { type: Date, default: Date.now },
-  image: { type: String }, 
-  totalStudents: { type: Number }, 
-  mealsDistributed: { type: Number }, 
+  image: { type: String },
+  totalStudents: { type: Number },
+  mealsDistributed: { type: Number },
+  aiAnalysis: {
+    summary: String,
+    insights: [String],
+    guidance: String,
+    nextSteps: [String],
+    draftReply: String,
+    statusAdvice: String,
+    lastUpdated: { type: Date, default: Date.now },
+  },
 });
 
 export const Report = models.Report || model("Report", ReportSchema);

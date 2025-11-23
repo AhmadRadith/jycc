@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import type { AppProps } from "next/app";
 import Head from "next/head";
-import Script from "next/script";
 import "@/styles/globals.css";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 import { sanitizeNextPath } from "@/shared/navigation";
 
 const THEME_STORAGE_KEY = "mbg-theme";
@@ -69,7 +69,6 @@ export default function App({ Component, pageProps }: AppProps) {
           credentials: "include",
         });
       } catch {
-        /* ignore network errors; still redirect */
       }
 
       window.location.href = `/login?next=${nextParam}`;
@@ -134,15 +133,7 @@ export default function App({ Component, pageProps }: AppProps) {
         {}
         <title>MBGsecure</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-        />
       </Head>
-      <Script
-        src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.10/dist/signature_pad.umd.min.js"
-        strategy="afterInteractive"
-      />
       <Component {...pageProps} />
     </>
   );

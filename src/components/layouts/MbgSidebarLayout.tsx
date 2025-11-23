@@ -19,7 +19,6 @@ import {
   Users,
   ChartLine,
   FileSignature,
-  BarChart3,
   Archive,
 } from "lucide-react";
 
@@ -39,7 +38,9 @@ type MenuKey =
   | "reports"
   | "stats"
   | "archive"
-  | "laporan-siswa";
+  | "laporan-siswa"
+  | "suggestions"
+  | "supplier";
 
 interface MenuItem {
   key: MenuKey;
@@ -88,7 +89,7 @@ const UNIFIED_MENU: MenuItem[] = [
   },
   {
     key: "users",
-    label: "Manajemen User",
+    label: "Manajemen Pengguna",
     icon: UserPlus,
     href: "/dashboard?tab=addUser",
   },
@@ -156,6 +157,12 @@ const DAERAH_MENU: MenuSection[] = [
         href: "/dashboard?tab=distribution",
       },
       {
+        key: "lapor",
+        label: "Lihat seluruh Laporan",
+        icon: Headset,
+        href: "/lapor",
+      },
+      {
         key: "sekolah",
         label: "Program Sekolah",
         iconClass: "fas fa-school",
@@ -167,13 +174,7 @@ const DAERAH_MENU: MenuSection[] = [
         iconClass: "fas fa-chart-line",
         href: "/dashboard?tab=quality",
       },
-      // {
-      //   key: "verifikasi",
-      //   label: "Verifikasi SPPG",
-      //   iconClass: "fas fa-file-signature",
-      //   href: "/dashboard?tab=verification",
-      //   badge: "7",
-      // },
+
       {
         key: "peringatan",
         label: "Peringatan",
@@ -183,35 +184,35 @@ const DAERAH_MENU: MenuSection[] = [
       },
     ],
   },
-  {
-    title: "Data & Analisis",
-    items: [
-      {
-        key: "reports",
-        label: "Laporan Wilayah",
-        iconClass: "fas fa-file-alt",
-        href: "/dashboard?tab=reports",
-      },
-      {
-        key: "stats",
-        label: "Statistik Daerah",
-        iconClass: "fas fa-chart-bar",
-        href: "/dashboard?tab=stats",
-      },
-      {
-        key: "archive",
-        label: "Arsip Data",
-        iconClass: "fas fa-archive",
-        href: "/dashboard?tab=archive",
-      },
-    ],
-  },
+  // {
+  //   title: "Data & Analisis",
+  //   items: [
+  //     {
+  //       key: "reports",
+  //       label: "Laporan Wilayah",
+  //       iconClass: "fas fa-file-alt",
+  //       href: "/dashboard?tab=reports",
+  //     },
+  //     {
+  //       key: "stats",
+  //       label: "Statistik Daerah",
+  //       iconClass: "fas fa-chart-bar",
+  //       href: "/dashboard?tab=stats",
+  //     },
+  //     {
+  //       key: "archive",
+  //       label: "Arsip Data",
+  //       iconClass: "fas fa-archive",
+  //       href: "/dashboard?tab=archive",
+  //     },
+  //   ],
+  // },
   {
     title: "Pengguna",
     items: [
       {
         key: "users",
-        label: "Tambah Akun Sekolah",
+        label: "Akun Mitra & Sekolah",
         iconClass: "fas fa-school",
         href: "/dashboard?tab=addUser",
       },
@@ -247,13 +248,7 @@ const PUSAT_MENU: MenuSection[] = [
         icon: ChartLine,
         href: "/dashboard?tab=quality",
       },
-      // {
-      //   key: "verifikasi",
-      //   label: "Verifikasi SPPG",
-      //   icon: FileSignature,
-      //   href: "/dashboard?tab=verification",
-      //   badge: "7",
-      // },
+
       {
         key: "peringatan",
         label: "Peringatan",
@@ -262,35 +257,35 @@ const PUSAT_MENU: MenuSection[] = [
       },
     ],
   },
-  {
-    title: "Data & Analisis",
-    items: [
-      {
-        key: "reports",
-        label: "Laporan Wilayah",
-        icon: FileText,
-        href: "/dashboard?tab=reports",
-      },
-      {
-        key: "stats",
-        label: "Statistik Nasional",
-        icon: BarChart3,
-        href: "/dashboard?tab=stats",
-      },
-      {
-        key: "archive",
-        label: "Arsip Data",
-        icon: Archive,
-        href: "/dashboard?tab=archive",
-      },
-    ],
-  },
+  // {
+  //   title: "Data & Analisis",
+  //   items: [
+  //     {
+  //       key: "reports",
+  //       label: "Laporan Wilayah",
+  //       icon: FileText,
+  //       href: "/dashboard?tab=reports",
+  //     },
+  //     {
+  //       key: "stats",
+  //       label: "Statistik Nasional",
+  //       icon: BarChart3,
+  //       href: "/dashboard?tab=stats",
+  //     },
+  //     {
+  //       key: "archive",
+  //       label: "Arsip Data",
+  //       icon: Archive,
+  //       href: "/dashboard?tab=archive",
+  //     },
+  //   ],
+  // },
   {
     title: "Pengguna",
     items: [
       {
         key: "users",
-        label: "Manajemen User",
+        label: "Manajemen Pengguna",
         icon: UserPlus,
         href: "/dashboard?tab=addUser",
       },
@@ -325,10 +320,22 @@ const MENU_CONFIG: Record<string, MenuSection[]> = {
           href: "/dashboard?tab=schools",
         },
         {
+          key: "supplier",
+          label: "Data Supplier",
+          icon: Users,
+          href: "/dashboard?tab=supplier",
+        },
+        {
           key: "lapor",
           label: "Lihat seluruh Laporan",
           icon: Headset,
           href: "/lapor",
+        },
+        {
+          key: "suggestions",
+          label: "Saran & Masukan",
+          icon: FileText,
+          href: "/dashboard?tab=suggestions",
         },
         {
           key: "peringatan",
@@ -342,17 +349,29 @@ const MENU_CONFIG: Record<string, MenuSection[]> = {
   murid: [
     {
       title: "Menu Utama",
-      items: UNIFIED_MENU.filter(
-        (item) => item.key === "dashboard" || item.key === "lapor"
-      ),
+      items: [
+        ...UNIFIED_MENU.filter((item) => item.key === "dashboard"),
+        {
+          key: "lapor",
+          label: "Laporkan sesuatu",
+          icon: Headset,
+          href: "/lapor",
+        },
+      ],
     },
   ],
   siswa: [
     {
       title: "Menu Utama",
-      items: UNIFIED_MENU.filter(
-        (item) => item.key === "dashboard" || item.key === "lapor"
-      ),
+      items: [
+        ...UNIFIED_MENU.filter((item) => item.key === "dashboard"),
+        {
+          key: "lapor",
+          label: "Laporkan sesuatu",
+          icon: Headset,
+          href: "/lapor",
+        },
+      ],
     },
   ],
 };

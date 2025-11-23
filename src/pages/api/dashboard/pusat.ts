@@ -26,6 +26,12 @@ export default async function handler(
         resolvedReports: await Report.countDocuments({ status: "approved" }),
         participationRate: 0,
         distributionData: [],
+        weeklyScores: [
+          { name: "W1", score: 0 },
+          { name: "W2", score: 0 },
+          { name: "W3", score: 0 },
+          { name: "W4", score: 0 },
+        ],
       };
 
   const alertReports = await Report.find({

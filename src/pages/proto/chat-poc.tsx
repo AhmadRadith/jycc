@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import type { GetServerSidePropsContext, GetServerSidePropsResult } from "next";
 
 import { getSessionUserFromCookies } from "@/lib/session";
@@ -33,7 +33,7 @@ export default function ChatPocPage({ currentUser }: ChatPocProps) {
 
   const ticketId = useMemo(() => "tiket-0", []);
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/chat/messages?ticketId=${encodeURIComponent(ticketId)}`,
@@ -54,7 +54,7 @@ export default function ChatPocPage({ currentUser }: ChatPocProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [ticketId]);
 
   useEffect(() => {
     void loadMessages();
@@ -62,7 +62,7 @@ export default function ChatPocPage({ currentUser }: ChatPocProps) {
       void loadMessages();
     }, POLL_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [ticketId]);
+  }, [loadMessages]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] ?? null;
@@ -252,6 +252,12 @@ export default function ChatPocPage({ currentUser }: ChatPocProps) {
 export async function getServerSideProps(
   context: GetServerSidePropsContext
 ): Promise<GetServerSidePropsResult<ChatPocProps>> {
+  if (process.env.NODE_ENV !== "development") {
+    return {
+      notFound: true,
+    };
+  }
+
   const user = getSessionUserFromCookies(context.req?.headers?.cookie);
 
   if (!user) {

@@ -7,27 +7,7 @@ import {
   AlertCircle,
   School,
   FileText,
-  LayoutDashboard,
-  Utensils,
-  ChefHat,
-  Leaf,
-  Trash2,
-  Users,
-  Headset,
-  AlertTriangle,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Legend,
-} from "recharts";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { MbgSidebarLayout } from "@/components/layouts/MbgSidebarLayout";
@@ -201,103 +181,16 @@ export default function MitraDashboard() {
       alert("Gagal menambahkan menu.");
     }
   };
-  const handleDeleteFood = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus menu ini?")) return;
-    try {
-      const res = await fetch("/api/dashboard/mitra", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "delete_food",
-          id,
-        }),
-      });
-      if (res.ok) {
-        setFoodItems(foodItems.filter((item) => item._id !== id));
-        alert("Menu berhasil dihapus!");
-      }
-    } catch (error) {
-      console.error("Failed to delete food", error);
-      alert("Gagal menghapus menu.");
-    }
-  };
 
   const verifiedReports = reports.filter((r) => r.status === "resolved");
   const pendingReports = reports.filter(
     (r) => r.status === "pending" || r.status === "escalated"
   );
 
-  const requestStats = requests.reduce((acc: any, req: any) => {
-    const school = req.schoolName || "Unknown";
-    acc[school] = (acc[school] || 0) + 1;
-    return acc;
-  }, {});
-
-  const requestChartData = Object.keys(requestStats).map((key) => ({
-    name: key,
-    count: requestStats[key],
-  }));
-
-  const customMenu = [
-    {
-      title: "Menu Utama",
-      items: [
-        {
-          key: "dashboard" as any,
-          label: "Dashboard",
-          icon: LayoutDashboard,
-          href: "/dashboard",
-        },
-        {
-          key: "nutrition" as any,
-          label: "Nutrisi & Menu Kustom",
-          icon: Utensils,
-          href: "/dashboard?tab=nutrition",
-        },
-        {
-          key: "ingredients" as any,
-          label: "Bahan Baku",
-          icon: Leaf,
-          href: "/dashboard?tab=ingredients",
-        },
-        {
-          key: "recipes" as any,
-          label: "Resep Kustom",
-          href: "/dashboard?tab=recipes",
-        },
-        {
-          key: "supplier" as any,
-          label: "Data Supplier",
-          icon: Users,
-          href: "/dashboard?tab=supplier",
-        },
-        {
-          key: "lapor" as any,
-          label: "Lihat seluruh Laporan",
-          icon: Headset,
-          href: "/lapor",
-        },
-        {
-          key: "suggestions" as any,
-          label: "Saran & Masukan",
-          icon: FileText,
-          href: "/dashboard?tab=suggestions",
-        },
-        {
-          key: "peringatan" as any,
-          label: "Peringatan",
-          icon: AlertTriangle,
-          href: "/dashboard?tab=alerts",
-        },
-      ],
-    },
-  ];
-
   return (
     <MbgSidebarLayout
       activeMenu={tab ? (tab as any) : "dashboard"}
       role="mitra"
-      menuItems={customMenu}
       contentClassName="bg-[#f7f5f0] min-h-screen main-content pt-[20px] px-[16px] pb-[24px] md:p-[30px]"
     >
       <Head>
@@ -395,289 +288,6 @@ export default function MitraDashboard() {
             )}
           </div>
         </div>
-      ) : tab === "nutrition" ? (
-        <div className="space-y-6 animate-fade-in">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Nutrisi & Menu Kustom
-            </h1>
-            <p className="text-gray-500">
-              Kelola menu makanan kustom dan informasi nutrisi.
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-blue-900">
-                🍽️ Manajemen Menu Makanan
-              </h3>
-              <p className="text-gray-500 text-sm">
-                Tambahkan menu makanan kustom yang Anda sediakan.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1">
-                <form onSubmit={handleAddFood} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nama Makanan
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={foodForm.name}
-                      onChange={(e) =>
-                        setFoodForm({ ...foodForm, name: e.target.value })
-                      }
-                      placeholder="Contoh: Ayam Goreng Lengkuas"
-                      required
-                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Kalori (kkal)
-                      </label>
-                      <input
-                        type="number"
-                        name="calories"
-                        value={foodForm.calories}
-                        onChange={(e) =>
-                          setFoodForm({ ...foodForm, calories: e.target.value })
-                        }
-                        placeholder="0"
-                        required
-                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Protein (g)
-                      </label>
-                      <input
-                        type="number"
-                        name="protein"
-                        value={foodForm.protein}
-                        onChange={(e) =>
-                          setFoodForm({ ...foodForm, protein: e.target.value })
-                        }
-                        placeholder="0"
-                        required
-                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Karbo (g)
-                      </label>
-                      <input
-                        type="number"
-                        name="carbs"
-                        value={foodForm.carbs}
-                        onChange={(e) =>
-                          setFoodForm({ ...foodForm, carbs: e.target.value })
-                        }
-                        placeholder="0"
-                        required
-                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Lemak (g)
-                      </label>
-                      <input
-                        type="number"
-                        name="fat"
-                        value={foodForm.fat}
-                        onChange={(e) =>
-                          setFoodForm({ ...foodForm, fat: e.target.value })
-                        }
-                        placeholder="0"
-                        required
-                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <i className="fas fa-plus" /> Tambah Menu
-                  </button>
-                </form>
-              </div>
-
-              <div className="lg:col-span-2">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
-                      <tr>
-                        <th className="px-4 py-3">Menu</th>
-                        <th className="px-4 py-3">Kalori</th>
-                        <th className="px-4 py-3">Protein</th>
-                        <th className="px-4 py-3">Karbo</th>
-                        <th className="px-4 py-3">Lemak</th>
-                        <th className="px-4 py-3">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-                      {foodItems.length > 0 ? (
-                        foodItems.map((food: any) => (
-                          <tr
-                            key={food._id}
-                            className="hover:bg-gray-50 transition-colors"
-                          >
-                            <td className="px-4 py-3 font-medium">
-                              {food.name}
-                            </td>
-                            <td className="px-4 py-3">{food.calories}</td>
-                            <td className="px-4 py-3">{food.protein}g</td>
-                            <td className="px-4 py-3">{food.carbs}g</td>
-                            <td className="px-4 py-3">{food.fat}g</td>
-                            <td className="px-4 py-3">
-                              <button
-                                onClick={() => handleDeleteFood(food._id)}
-                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Hapus Menu"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-4 py-6 text-center text-gray-500"
-                          >
-                            Belum ada menu kustom.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-blue-900">
-                Input Polling Menu Makanan
-              </h3>
-              <p className="text-gray-500 text-sm">
-                Buat polling untuk menentukan menu favorit siswa.
-              </p>
-            </div>
-            <form
-              className="space-y-4"
-              id="pollForm"
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert("Fitur polling akan segera hadir.");
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Judul Polling"
-                required
-                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
-              />
-              <select
-                required
-                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
-              >
-                <option value="">Pilih Jenis</option>
-                <option value="pagi">Sarapan</option>
-                <option value="siang">Makan Siang</option>
-              </select>
-              <input
-                type="date"
-                required
-                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
-              />
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                <i className="fas fa-plus" /> Buat Polling
-              </button>
-            </form>
-          </div>
-        </div>
-      ) : tab === "supplier" ? (
-        <div className="space-y-6 animate-fade-in">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Data Supplier</h1>
-            <p className="text-gray-500">
-              Kelola data supplier dan komoditas bahan baku.
-            </p>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-blue-900">
-                Daftar Supplier Mitra
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
-                  <tr>
-                    <th className="px-6 py-4">Nama</th>
-                    <th className="px-6 py-4">Komoditas</th>
-                    <th className="px-6 py-4">Kontak</th>
-                    <th className="px-6 py-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">CV. Pangan Sehat</td>
-                    <td className="px-6 py-4">Beras, Sayur</td>
-                    <td className="px-6 py-4">0812...</td>
-                    <td className="px-6 py-4">Aktif</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : tab === "ingredients" ? (
-        <div className="space-y-6 animate-fade-in">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Bahan Baku</h1>
-            <p className="text-gray-500">
-              Kelola stok dan supplier bahan baku.
-            </p>
-          </div>
-          <div className="bg-white p-12 rounded-xl border border-gray-100 text-center">
-            <Leaf size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-bold text-gray-900">Segera Hadir</h3>
-            <p className="text-gray-500">
-              Fitur manajemen bahan baku sedang dalam pengembangan.
-            </p>
-          </div>
-        </div>
-      ) : tab === "recipes" ? (
-        <div className="space-y-6 animate-fade-in">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Resep Kustom</h1>
-            <p className="text-gray-500">
-              Buat dan kelola resep makanan kustom.
-            </p>
-          </div>
-          <div className="bg-white p-12 rounded-xl border border-gray-100 text-center">
-            <ChefHat size={48} className="mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-bold text-gray-900">Segera Hadir</h3>
-            <p className="text-gray-500">
-              Fitur manajemen resep sedang dalam pengembangan.
-            </p>
-          </div>
-        </div>
       ) : !tab || tab === "dashboard" ? (
         <>
           <div className="mb-8">
@@ -747,33 +357,6 @@ export default function MitraDashboard() {
                   <i className="fas fa-exclamation-circle"></i>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-gray-900">
-                Tren Ketepatan Waktu (Mingguan)
-              </h3>
-              <p className="text-sm text-gray-500">
-                Performa pengiriman dalam 4 minggu terakhir
-              </p>
-            </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats?.weeklyScores || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis domain={[0, 10]} tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Area
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#0f52ba"
-                    fill="rgba(15, 82, 186, 0.1)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
             </div>
           </div>
 
@@ -1030,38 +613,44 @@ export default function MitraDashboard() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
             <div className="mb-6">
               <h3 className="text-lg font-bold text-blue-900">
-                📋 Permintaan Murid
+                Data Supplier Mitra
               </h3>
-              <p className="text-gray-500 text-sm">
-                Statistik permintaan menu dari berbagai sekolah.
-              </p>
             </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
+                  <tr>
+                    <th className="px-6 py-4">Nama</th>
+                    <th className="px-6 py-4">Komoditas</th>
+                    <th className="px-6 py-4">Kontak</th>
+                    <th className="px-6 py-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">CV. Pangan Sehat</td>
+                    <td className="px-6 py-4">Beras, Sayur</td>
+                    <td className="px-6 py-4">0812...</td>
+                    <td className="px-6 py-4">Aktif</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            {requests.length > 0 && (
-              <div className="mb-8 h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={requestChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar
-                      dataKey="count"
-                      name="Jumlah Permintaan"
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-blue-900">
+                📋 Permintaan Sekolah
+              </h3>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-6 py-4">Sekolah</th>
                     <th className="px-6 py-4">Menu</th>
+                    <th className="px-6 py-4">Jumlah</th>
                     <th className="px-6 py-4">Tanggal</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
@@ -1077,6 +666,7 @@ export default function MitraDashboard() {
                           {req.schoolName}
                         </td>
                         <td className="px-6 py-4">{req.menuName}</td>
+                        <td className="px-6 py-4">{req.quantity} Porsi</td>
                         <td className="px-6 py-4">
                           {new Date(req.requestDate).toLocaleDateString(
                             "id-ID"
@@ -1104,7 +694,7 @@ export default function MitraDashboard() {
                   ) : (
                     <tr>
                       <td
-                        colSpan={4}
+                        colSpan={5}
                         className="px-6 py-8 text-center text-gray-500"
                       >
                         Belum ada permintaan sekolah.
@@ -1114,6 +704,197 @@ export default function MitraDashboard() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-blue-900">
+                🍽️ Manajemen Menu Makanan
+              </h3>
+              <p className="text-gray-500 text-sm">
+                Tambahkan menu makanan kustom yang Anda sediakan.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1">
+                <form onSubmit={handleAddFood} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nama Makanan
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={foodForm.name}
+                      onChange={(e) =>
+                        setFoodForm({ ...foodForm, name: e.target.value })
+                      }
+                      placeholder="Contoh: Ayam Goreng Lengkuas"
+                      required
+                      className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Kalori (kkal)
+                      </label>
+                      <input
+                        type="number"
+                        name="calories"
+                        value={foodForm.calories}
+                        onChange={(e) =>
+                          setFoodForm({ ...foodForm, calories: e.target.value })
+                        }
+                        placeholder="0"
+                        required
+                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Protein (g)
+                      </label>
+                      <input
+                        type="number"
+                        name="protein"
+                        value={foodForm.protein}
+                        onChange={(e) =>
+                          setFoodForm({ ...foodForm, protein: e.target.value })
+                        }
+                        placeholder="0"
+                        required
+                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Karbo (g)
+                      </label>
+                      <input
+                        type="number"
+                        name="carbs"
+                        value={foodForm.carbs}
+                        onChange={(e) =>
+                          setFoodForm({ ...foodForm, carbs: e.target.value })
+                        }
+                        placeholder="0"
+                        required
+                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Lemak (g)
+                      </label>
+                      <input
+                        type="number"
+                        name="fat"
+                        value={foodForm.fat}
+                        onChange={(e) =>
+                          setFoodForm({ ...foodForm, fat: e.target.value })
+                        }
+                        placeholder="0"
+                        required
+                        className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <i className="fas fa-plus" /> Tambah Menu
+                  </button>
+                </form>
+              </div>
+
+              <div className="lg:col-span-2">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
+                      <tr>
+                        <th className="px-4 py-3">Menu</th>
+                        <th className="px-4 py-3">Kalori</th>
+                        <th className="px-4 py-3">Protein</th>
+                        <th className="px-4 py-3">Karbo</th>
+                        <th className="px-4 py-3">Lemak</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
+                      {foodItems.length > 0 ? (
+                        foodItems.map((food: any) => (
+                          <tr
+                            key={food._id}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            <td className="px-4 py-3 font-medium">
+                              {food.name}
+                            </td>
+                            <td className="px-4 py-3">{food.calories}</td>
+                            <td className="px-4 py-3">{food.protein}g</td>
+                            <td className="px-4 py-3">{food.carbs}g</td>
+                            <td className="px-4 py-3">{food.fat}g</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="px-4 py-6 text-center text-gray-500"
+                          >
+                            Belum ada menu kustom.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-blue-900">
+                Input Polling Menu Makanan
+              </h3>
+            </div>
+            <form
+              className="space-y-4"
+              id="pollForm"
+              onSubmit={(e) => {
+                e.preventDefault();
+                alert("Fitur polling akan segera hadir.");
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Judul Polling"
+                required
+                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+              />
+              <select
+                required
+                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+              >
+                <option value="">Pilih Jenis</option>
+                <option value="pagi">Sarapan</option>
+                <option value="siang">Makan Siang</option>
+              </select>
+              <input
+                type="date"
+                required
+                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+              />
+              <button
+                type="submit"
+                className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <i className="fas fa-plus" /> Buat Polling
+              </button>
+            </form>
           </div>
         </>
       ) : (
