@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distribusi MBG</title>
+    <style>
+        :root {
+            --primary-blue: #063b74;
+            --light-blue: #E6F2FF;
+            --white: #FFFFFF;
+            --gray: #F5F5F5;
+            --dark-gray: #333333;
+            --green: #00C853;
+            --red: #FF3B30;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--white);
+            color: var(--dark-gray);
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            background-color: var(--primary-blue);
+            color: var(--white);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .time {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .location-icon {
+            width: 24px;
+            height: 24px;
+            background-color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .back-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        /* Map Section */
+        .map-container {
+            height: 40vh;
+            background-color: #f0f0f0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .map-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(95%);
+        }
+        
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        
+        .destination-box {
+            background-color: var(--white);
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+        
+        .destination-text {
+            font-size: 16px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .route-info {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--white);
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .route-title {
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
+        
+        .route-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .pin {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
+        }
+        
+        .start-pin {
+            top: 30%;
+            left: 30%;
+        }
+        
+        .end-pin {
+            top: 70%;
+            right: 30%;
+        }
+        
+        .best-route {
+            position: absolute;
+            top: 50%;
+            right: 20%;
+            background-color: var(--green);
+            color: var(--white);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 200, 83, 0.5);
+        }
+        
+        .best-route-title {
+            font-weight: bold;
+        }
+        
+        .best-route-time {
+            font-size: 12px;
+        }
+        
+        /* Ride Options */
+        .ride-options {
+            padding: 20px;
+            background-color: var(--white);
+        }
+        
+        .ride-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .ride-option:hover {
+            background-color: var(--light-blue);
+        }
+        
+        .ride-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .ride-icon {
+            width: 32px;
+            height: 32px;
+            background-color: var(--primary-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: bold;
+        }
+        
+        .ride-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .ride-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .ride-estimate {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .ride-price {
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--primary-blue);
+        }
+        
+        .highlighted {
+            background-color: var(--light-blue);
+        }
+        
+        .discount-tag {
+            background-color: var(--green);
+            color: var(--white);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        /* Payment & Book Button */
+        .payment-section {
+            padding: 15px 20px;
+            background-color: var(--white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .payment-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .payment-option.active {
+            background-color: var(--light-blue);
+        }
+        
+        .payment-icon {
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+        }
+        
+        .more-options {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .book-button {
+            width: 90%;
+            margin: 20px auto;
+            padding: 15px 20px;
+            background-color: var(--green);
+            color: var(--white);
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 200, 83, 0.3);
+        }
+        
+        .book-button:hover {
+            background-color: #00a040;
+        }
+        
+        /* Route Details */
+        .route-details {
+            padding: 15px 20px;
+            background-color: var(--white);
+            border-top: 1px solid #eee;
+        }
+        
+        .route-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .route-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .route-label {
+            font-size: 14px;
+        }
+        
+        .route-value {
+            font-weight: bold;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .time {
+                font-size: 20px;
+            }
+            
+            .ride-option {
+                padding: 12px 15px;
+            }
+            
+            .ride-name {
+                font-size: 14px;
+            }
+            
+            .book-button {
+                padding: 12px 15px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="back-button">←</div>
+                <div class="time">09:10</div>
+                <div class="location-icon">↑</div>
+            </div>
+            <div class="header-right">
+                <div class="user-avatar">Y</div>
+                <div class="battery">75%</div>
+            </div>
+        </div>
+        
+        <!-- Map Section -->
+        <div class="map-container">
+            <img src="https://placehold.co/480x300/e6f2ff/007aff?text=Map+View" alt="Map" class="map-image">
+            <div class="map-overlay">
+                <div class="destination-box">
+                    <div class="destination-text">UBAYA</div>
+                    <div style="color: var(--primary-blue);">→</div>
+                </div>
+                
+                <div class="route-info">
+                    <div class="route-title">Route 1</div>
+                    <div class="route-time">24 min • 9.6 km</div>
+                </div>
+                
+                <div class="best-route">
+                    <div class="best-route-title">Best</div>
+                    <div class="best-route-time">20 min • 8.3 km</div>
+                </div>
+                
+                <div class="pin start-pin">M</div>
+                <div class="pin end-pin">S</div>
+            </div>
+        </div>
+        
+        <!-- Ride Options -->
+        <div class="ride-options">
+            <div class="ride-option highlighted">
+                <div class="ride-info">
+                    <div class="ride-icon">M</div>
+                    <div class="ride-details">
+                        <div class="ride-name">SDN 7 Kota Malang <span class="coupon"></span></div>
+                        <div class="ride-estimate">Est. 2 mins away</div>
+                        <div class="ride-estimate">Nonstop Low Fare</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ride-option">
+                <div class="ride-info">
+                    <div class="ride-icon">S</div>
+                    <div class="ride-details">
+                        <div class="ride-name">SMA 6 Kota Malang <span class="coupon"></span></div>
+                        <div class="ride-estimate">Est. 3 mins away</div>
+                    </div>
+                </div>
+            </div>
+        
+        <!-- booking section -->
+        <div class="">
+            <div class="Jalankan Distribusi MBG">
+                <div class=""></div>
+                <div>Kode Reveal</div>
+                
+        
+        <!-- Book Button -->
+        <div class="book-button">Jalankan Distribusi MBG</div>
+    </div>
+
+    <script>
+        // Add interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Make ride options clickable
+            const rideOptions = document.querySelectorAll('.ride-option');
+            rideOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove highlight from all options
+                    rideOptions.forEach(opt => opt.classList.remove('highlighted'));
+                    // Add highlight to clicked option
+                    this.classList.add('highlighted');
+                    
+                    // Update book button text
+                    const rideName = this.querySelector('.ride-name').textContent.split(' ')[0] + ' ' + 
+                                   this.querySelector('.ride-name').textContent.split(' ')[1];
+                    document.querySelector('.book-button').textContent = `Book ${rideName}`;
+                });
+            });
+            
+            // Make payment options clickable
+            const paymentOptions = document.querySelectorAll('.payment-option');
+            paymentOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    paymentOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Book button click handler
+            document.querySelector('.book-button').addEventListener('click', function() {
+                alert('Booking confirmed! Your driver will arrive shortly.');
+            });
+        });
+    </script>
+</body>
+</html>
